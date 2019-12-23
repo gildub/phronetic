@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gildub/analyze/pkg/env"
-	"github.com/gildub/analyze/pkg/transform"
+	"github.com/gildub/phronetic/pkg/env"
+	"github.com/gildub/phronetic/pkg/transform"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,18 +32,10 @@ func TestReport(t *testing.T) {
 	assert.NoError(t, err, "Could not open cluster session")
 
 	os.Chdir("../..")
-	os.Setenv("ANALYTICS_CONFIGSOURCE", "remote")
-	os.Setenv("ANALYTICS_CRIOCONFIGFILE", "/etc/crio/crio.conf")
-	os.Setenv("ANALYTICS_DESTINATION", "false")
-	os.Setenv("ANALYTICS_ETCDCONFIGFILE", "/etc/etcd/etcd.conf")
-	os.Setenv("ANALYTICS_INSECUREHOSTKEY", "true")
-	os.Setenv("ANALYTICS_MANIFESTS", "true")
-	os.Setenv("ANALYTICS_MASTERCONFIGFILE", "/etc/origin/master/master-config.yaml")
-	os.Setenv("ANALYTICS_NODECONFIGFILE", "/etc/origin/node/node-config.yaml")
-	os.Setenv("ANALYTICS_REGISTRIESCONFIGFILE", "/etc/containers/registries.conf")
-	os.Setenv("ANALYTICS_REPORTING", "true")
-	os.Setenv("ANALYTICS_SAVECONFIG", "false")
-	os.Setenv("ANALYTICS_WORKDIR", e2eTestOut)
+	os.Setenv("PHRONETIC_MANIFESTS", "true")
+	os.Setenv("PHRONETIC_REPORTING", "true")
+	os.Setenv("PHRONETIC_SAVECONFIG", "false")
+	os.Setenv("PHRONETIC_WORKDIR", e2eTestOut)
 
 	err = runCpma()
 	assert.NoError(t, err, "Couldn't execute CPMA")
@@ -76,17 +68,11 @@ func TestManifestsReporting(t *testing.T) {
 	assert.NoError(t, err, "Could not open cluster session")
 
 	os.Chdir("../..")
-	os.Setenv("ANALYTICS_CONFIGSOURCE", "remote")
-	os.Setenv("ANALYTICS_CRIOCONFIGFILE", "/etc/crio/crio.conf")
-	os.Setenv("ANALYTICS_ETCDCONFIGFILE", "/etc/etcd/etcd.conf")
-	os.Setenv("ANALYTICS_INSECUREHOSTKEY", "true")
-	os.Setenv("ANALYTICS_MASTERCONFIGFILE", "/etc/origin/master/master-config.yaml")
-	os.Setenv("ANALYTICS_NODECONFIGFILE", "/etc/origin/node/node-config.yaml")
-	os.Setenv("ANALYTICS_REGISTRIESCONFIGFILE", "/etc/containers/registries.conf")
-	os.Setenv("ANALYTICS_SAVECONFIG", "false")
-	os.Setenv("ANALYTICS_WORKDIR", e2eTestOut)
-	os.Setenv("ANALYTICS_TARGETCLUSTER", "false")
-	os.Setenv("ANALYTICS_TARGETCLUSTERNAME", "")
+	os.Setenv("PHRONETIC_CONFIGSOURCE", "remote")
+	os.Setenv("PHRONETIC_INSECUREHOSTKEY", "true")
+	os.Setenv("PHRONETIC_SAVECONFIG", "false")
+	os.Setenv("PHRONETIC_WORKDIR", e2eTestOut)
+	os.Setenv("PHRONETIC_MIGRATIONCLUSTER", "")
 
 	err = runCpma()
 	assert.NoError(t, err, "Couldn't execute CPMA")
@@ -120,8 +106,8 @@ func TestManifestsReporting(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			os.Setenv("ANALYTICS_MANIFESTS", tc.manifests)
-			os.Setenv("ANALYTICS_REPORTING", tc.reporting)
+			os.Setenv("PHRONETIC_MANIFESTS", tc.manifests)
+			os.Setenv("PHRONETIC_REPORTING", tc.reporting)
 
 			err = runCpma()
 			assert.NoError(t, err, "Couldn't execute CPMA")
@@ -145,8 +131,8 @@ func TestManifestsReporting(t *testing.T) {
 				assert.Equal(t, nil, err)
 			}
 
-			os.Unsetenv("ANALYTICS_MANIFESTS")
-			os.Unsetenv("ANALYTICS_REPORTING")
+			os.Unsetenv("PHRONETIC_MANIFESTS")
+			os.Unsetenv("PHRONETIC_REPORTING")
 		})
 	}
 }
@@ -158,9 +144,9 @@ func openClusterSession(tmpDir string) error {
 		return errors.Wrap(err, "Cant locate oc binary ")
 	}
 
-	clusterAddr := os.Getenv("ANALYTICS_HOSTNAME")
-	login := os.Getenv("ANALYTICS_LOGIN")
-	passwd := os.Getenv("ANALYTICS_PASSWD")
+	clusterAddr := os.Getenv("PHRONETIC_HOSTNAME")
+	login := os.Getenv("PHRONETIC_LOGIN")
+	passwd := os.Getenv("PHRONETIC_PASSWD")
 	kubeconfig, exists := os.LookupEnv("KUBECONFIG")
 	if !exists {
 		kubeconfig = path.Join(tmpDir, "kubeconfig")

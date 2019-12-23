@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gildub/analyze/pkg/env"
+	"github.com/gildub/phronetic/pkg/env"
 	"github.com/pkg/errors"
 	"github.com/pkg/sftp"
 	"github.com/sirupsen/logrus"

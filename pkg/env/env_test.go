@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gildub/analyze/pkg/api"
+	"github.com/gildub/phronetic/pkg/api"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -14,13 +14,13 @@ import (
 
 func TestInitConfig(t *testing.T) {
 	t.Parallel()
-	os.Setenv("ANALYTICS_CRIOCONFIGFILE", "dummy")
-	os.Setenv("ANALYTICS_ETCDCONFIGFILE", "dummy")
-	os.Setenv("ANALYTICS_MASTERCONFIGFILE", "dummy")
-	os.Setenv("ANALYTICS_NODECONFIGFILE", "dummy")
-	os.Setenv("ANALYTICS_REGISTRIESCONFIGFILE", "dummy")
-	os.Setenv("ANALYTICS_TARGETCLUSTER", "false")
-	os.Setenv("ANALYTICS_TARGETCLUSTERNAME", "")
+	os.Setenv("PHRONETIC_CRIOCONFIGFILE", "dummy")
+	os.Setenv("PHRONETIC_ETCDCONFIGFILE", "dummy")
+	os.Setenv("PHRONETIC_MASTERCONFIGFILE", "dummy")
+	os.Setenv("PHRONETIC_NODECONFIGFILE", "dummy")
+	os.Setenv("PHRONETIC_REGISTRIESCONFIGFILE", "dummy")
+	os.Setenv("PHRONETIC_TARGETCLUSTER", "false")
+	os.Setenv("PHRONETIC_TARGETCLUSTERNAME", "")
 
 	ConfigFile = "testdata/cpma-config.yml"
 	api.K8sClient = &kubernetes.Clientset{}
@@ -73,27 +73,27 @@ func TestInitFromEnv(t *testing.T) {
 			name: "Read from remote",
 			sourceConfig: []configAsset{
 				configAsset{
-					envKey:           "ANALYTICS_HOSTNAME",
+					envKey:           "PHRONETIC_HOSTNAME",
 					envValue:         "master-0.test.example.com",
 					configEquivalent: "hostname",
 				},
 				configAsset{
-					envKey:           "ANALYTICS_SSHLOGIN",
+					envKey:           "PHRONETIC_SSHLOGIN",
 					envValue:         "root",
 					configEquivalent: "sshlogin",
 				},
 				configAsset{
-					envKey:           "ANALYTICS_SSHPRIVATEKEY",
+					envKey:           "PHRONETIC_SSHPRIVATEKEY",
 					envValue:         "/home/test/.ssh/testkey",
 					configEquivalent: "sshprivatekey",
 				},
 				configAsset{
-					envKey:           "ANALYTICS_SSHPORT",
+					envKey:           "PHRONETIC_SSHPORT",
 					envValue:         "22",
 					configEquivalent: "sshport",
 				},
 				configAsset{
-					envKey:           "ANALYTICS_CONFIGSOURCE",
+					envKey:           "PHRONETIC_CONFIGSOURCE",
 					envValue:         "remote",
 					configEquivalent: "configsource",
 				},
@@ -103,7 +103,7 @@ func TestInitFromEnv(t *testing.T) {
 			name: "Read from local",
 			sourceConfig: []configAsset{
 				configAsset{
-					envKey:           "ANALYTICS_CONFIGSOURCE",
+					envKey:           "PHRONETIC_CONFIGSOURCE",
 					envValue:         "local",
 					configEquivalent: "configsource",
 				},
@@ -113,22 +113,22 @@ func TestInitFromEnv(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			os.Setenv("ANALYTICS_CLUSTERNAME", "somename")
-			os.Setenv("ANALYTICS_DEBUG", "false")
-			os.Setenv("ANALYTICS_HOSTNAME", "master.example.org")
-			os.Setenv("ANALYTICS_MANIFESTS", "true")
-			os.Setenv("ANALYTICS_REPORTING", "true")
-			os.Setenv("ANALYTICS_SAVECONFIG", "false")
-			os.Setenv("ANALYTICS_SILENT", "false")
-			os.Setenv("ANALYTICS_WORKDIR", "testdata/out")
-			os.Setenv("ANALYTICS_TARGETCLUSTER", "false")
-			os.Setenv("ANALYTICS_TARGETCLUSTERNAME", "")
+			os.Setenv("PHRONETIC_CLUSTERNAME", "somename")
+			os.Setenv("PHRONETIC_DEBUG", "false")
+			os.Setenv("PHRONETIC_HOSTNAME", "master.example.org")
+			os.Setenv("PHRONETIC_MANIFESTS", "true")
+			os.Setenv("PHRONETIC_REPORTING", "true")
+			os.Setenv("PHRONETIC_SAVECONFIG", "false")
+			os.Setenv("PHRONETIC_SILENT", "false")
+			os.Setenv("PHRONETIC_WORKDIR", "testdata/out")
+			os.Setenv("PHRONETIC_TARGETCLUSTER", "false")
+			os.Setenv("PHRONETIC_TARGETCLUSTERNAME", "")
 
-			os.Setenv("ANALYTICS_CRIOCONFIGFILE", "/etc/crio/crio.conf")
-			os.Setenv("ANALYTICS_ETCDCONFIGFILE", "/etc/etcd/etcd.conf")
-			os.Setenv("ANALYTICS_MASTERCONFIGFILE", "/etc/origin/master/master-config.yaml")
-			os.Setenv("ANALYTICS_NODECONFIGFILE", "/etc/origin/node/node-config.yaml")
-			os.Setenv("ANALYTICS_REGISTRIESCONFIGFILE", "/etc/containers/registries.conf")
+			os.Setenv("PHRONETIC_CRIOCONFIGFILE", "/etc/crio/crio.conf")
+			os.Setenv("PHRONETIC_ETCDCONFIGFILE", "/etc/etcd/etcd.conf")
+			os.Setenv("PHRONETIC_MASTERCONFIGFILE", "/etc/origin/master/master-config.yaml")
+			os.Setenv("PHRONETIC_NODECONFIGFILE", "/etc/origin/node/node-config.yaml")
+			os.Setenv("PHRONETIC_REGISTRIESCONFIGFILE", "/etc/containers/registries.conf")
 
 			api.K8sClient = &kubernetes.Clientset{}
 			api.O7tClient = &api.OpenshiftClient{}

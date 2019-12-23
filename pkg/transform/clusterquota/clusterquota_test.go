@@ -3,8 +3,8 @@ package clusterquota_test
 import (
 	"testing"
 
-	"github.com/gildub/analyze/pkg/transform/clusterquota"
-	cpmatest "github.com/gildub/analyze/pkg/transform/internal/test"
+	"github.com/gildub/phronetic/pkg/transform/clusterquota"
+	cpmatest "github.com/gildub/phronetic/pkg/transform/internal/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

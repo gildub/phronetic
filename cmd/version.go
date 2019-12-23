@@ -19,8 +19,8 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Provides analyze' version",
-	Long:  `Returns the version of current analyze build`,
+	Short: "Provides phronetic' version",
+	Long:  `Returns the version of current phronetic build`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(BuildVersion, BuildTime)
 	},

@@ -5,11 +5,11 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/gildub/analyze/pkg/api"
-	"github.com/gildub/analyze/pkg/env"
-	"github.com/gildub/analyze/pkg/transform"
-	cpmatest "github.com/gildub/analyze/pkg/transform/internal/test"
-	"github.com/gildub/analyze/pkg/transform/reportoutput"
+	"github.com/gildub/phronetic/pkg/api"
+	"github.com/gildub/phronetic/pkg/env"
+	"github.com/gildub/phronetic/pkg/transform"
+	cpmatest "github.com/gildub/phronetic/pkg/transform/internal/test"
+	"github.com/gildub/phronetic/pkg/transform/reportoutput"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

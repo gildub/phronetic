@@ -3,10 +3,10 @@ package cluster_test
 import (
 	"testing"
 
-	"github.com/gildub/analyze/pkg/api"
-	"github.com/gildub/analyze/pkg/transform"
-	"github.com/gildub/analyze/pkg/transform/cluster"
-	cpmatest "github.com/gildub/analyze/pkg/transform/internal/test"
+	"github.com/gildub/phronetic/pkg/api"
+	"github.com/gildub/phronetic/pkg/transform"
+	"github.com/gildub/phronetic/pkg/transform/cluster"
+	cpmatest "github.com/gildub/phronetic/pkg/transform/internal/test"
 	o7tapiauth "github.com/openshift/api/authorization/v1"
 	o7tapiquota "github.com/openshift/api/quota/v1"
 	o7tapiroute "github.com/openshift/api/route/v1"

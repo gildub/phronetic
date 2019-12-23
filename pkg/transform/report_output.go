@@ -1,7 +1,7 @@
 package transform
 
 import (
-	"github.com/gildub/analyze/pkg/transform/reportoutput"
+	"github.com/gildub/phronetic/pkg/transform/reportoutput"
 	"github.com/sirupsen/logrus"
 )
 

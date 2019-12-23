@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gildub/analyze/pkg/decode"
-	"github.com/gildub/analyze/pkg/env"
-	"github.com/gildub/analyze/pkg/io"
-	"github.com/gildub/analyze/pkg/transform/apicert"
-	"github.com/gildub/analyze/pkg/transform/reportoutput"
+	"github.com/gildub/phronetic/pkg/decode"
+	"github.com/gildub/phronetic/pkg/env"
+	"github.com/gildub/phronetic/pkg/io"
+	"github.com/gildub/phronetic/pkg/transform/apicert"
+	"github.com/gildub/phronetic/pkg/transform/reportoutput"
 	"github.com/sirupsen/logrus"
 
 	legacyconfigv1 "github.com/openshift/api/legacyconfig/v1"

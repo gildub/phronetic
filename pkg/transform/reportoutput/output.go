@@ -1,7 +1,7 @@
 package reportoutput
 
 import (
-	"github.com/gildub/analyze/pkg/transform/cluster"
+	"github.com/gildub/phronetic/pkg/transform/cluster"
 )
 
 // ReportOutput holds a collection of reports to be written to file

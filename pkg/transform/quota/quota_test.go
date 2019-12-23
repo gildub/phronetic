@@ -3,8 +3,8 @@ package quota_test
 import (
 	"testing"
 
-	cpmatest "github.com/gildub/analyze/pkg/transform/internal/test"
-	"github.com/gildub/analyze/pkg/transform/quota"
+	cpmatest "github.com/gildub/phronetic/pkg/transform/internal/test"
+	"github.com/gildub/phronetic/pkg/transform/quota"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

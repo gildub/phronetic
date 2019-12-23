@@ -6,11 +6,11 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/gildub/analyze/pkg/decode"
-	"github.com/gildub/analyze/pkg/env"
-	"github.com/gildub/analyze/pkg/io"
-	"github.com/gildub/analyze/pkg/transform"
-	"github.com/gildub/analyze/pkg/transform/reportoutput"
+	"github.com/gildub/phronetic/pkg/decode"
+	"github.com/gildub/phronetic/pkg/env"
+	"github.com/gildub/phronetic/pkg/io"
+	"github.com/gildub/phronetic/pkg/transform"
+	"github.com/gildub/phronetic/pkg/transform/reportoutput"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gildub/analyze/pkg/io"
-	"github.com/gildub/analyze/pkg/transform/secrets"
+	"github.com/gildub/phronetic/pkg/io"
+	"github.com/gildub/phronetic/pkg/transform/secrets"
 	legacyconfigv1 "github.com/openshift/api/legacyconfig/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

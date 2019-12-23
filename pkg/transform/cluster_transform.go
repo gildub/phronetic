@@ -3,11 +3,11 @@ package transform
 import (
 	"fmt"
 
-	"github.com/gildub/analyze/pkg/api"
-	"github.com/gildub/analyze/pkg/env"
-	"github.com/gildub/analyze/pkg/transform/cluster"
-	"github.com/gildub/analyze/pkg/transform/clusterquota"
-	"github.com/gildub/analyze/pkg/transform/quota"
+	"github.com/gildub/phronetic/pkg/api"
+	"github.com/gildub/phronetic/pkg/env"
+	"github.com/gildub/phronetic/pkg/transform/cluster"
+	"github.com/gildub/phronetic/pkg/transform/clusterquota"
+	"github.com/gildub/phronetic/pkg/transform/quota"
 	o7tapiauth "github.com/openshift/api/authorization/v1"
 	o7tapiquota "github.com/openshift/api/quota/v1"
 	o7tapiroute "github.com/openshift/api/route/v1"

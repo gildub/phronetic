@@ -6,7 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/gildub/analyze/pkg/env"
+	"github.com/gildub/phronetic/pkg/env"
 	"github.com/sirupsen/logrus"
 )
 

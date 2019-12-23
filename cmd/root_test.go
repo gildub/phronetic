@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/gildub/analyze/cmd"
-	"github.com/gildub/analyze/pkg/env"
+	_ "github.com/gildub/phronetic/cmd"
+	"github.com/gildub/phronetic/pkg/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,22 +21,22 @@ func TestInitDefaults(t *testing.T) {
 
 func TestInitSetValues(t *testing.T) {
 	defer func() {
-		os.Unsetenv("ANALYTICS_MIGRATIONCLUSTER")
-		os.Unsetenv("ANALYTICS_DEBUG")
-		os.Unsetenv("ANALYTICS_INSECUREHOSTKEY")
-		os.Unsetenv("ANALYTICS_MANIFESTS")
-		os.Unsetenv("ANALYTICS_REPORTING")
-		os.Unsetenv("ANALYTICS_SILENT")
-		os.Unsetenv("ANALYTICS_WORKDIR")
+		os.Unsetenv("PHRONETIC_MIGRATIONCLUSTER")
+		os.Unsetenv("PHRONETIC_DEBUG")
+		os.Unsetenv("PHRONETIC_INSECUREHOSTKEY")
+		os.Unsetenv("PHRONETIC_MANIFESTS")
+		os.Unsetenv("PHRONETIC_REPORTING")
+		os.Unsetenv("PHRONETIC_SILENT")
+		os.Unsetenv("PHRONETIC_WORKDIR")
 	}()
 
-	os.Setenv("ANALYTICS_MIGRATIONCLUSTER", "cluster1.example.com")
-	os.Setenv("ANALYTICS_DEBUG", "true")
-	os.Setenv("ANALYTICS_INSECUREHOSTKEY", "true")
-	os.Setenv("ANALYTICS_MANIFESTS", "false")
-	os.Setenv("ANALYTICS_REPORTING", "false")
-	os.Setenv("ANALYTICS_SILENT", "true")
-	os.Setenv("ANALYTICS_WORKDIR", "./testdir")
+	os.Setenv("PHRONETIC_MIGRATIONCLUSTER", "cluster1.example.com")
+	os.Setenv("PHRONETIC_DEBUG", "true")
+	os.Setenv("PHRONETIC_INSECUREHOSTKEY", "true")
+	os.Setenv("PHRONETIC_MANIFESTS", "false")
+	os.Setenv("PHRONETIC_REPORTING", "false")
+	os.Setenv("PHRONETIC_SILENT", "true")
+	os.Setenv("PHRONETIC_WORKDIR", "./testdir")
 	env.InitConfig()
 
 	assert.Equal(t, "cluster1.example.com", env.Config().GetString("MigrationCluster"))

@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gildub/analyze/pkg/env"
+	"github.com/gildub/phronetic/pkg/env"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	k8sapicore "k8s.io/api/core/v1"

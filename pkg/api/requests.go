@@ -1,6 +1,7 @@
 package api
 
 import (
+	migv1alpha1 "github.com/fusor/mig-controller/pkg/apis/migration/v1alpha1"
 	o7tauthv1 "github.com/openshift/api/authorization/v1"
 	o7tquotav1 "github.com/openshift/api/quota/v1"
 	o7troutev1 "github.com/openshift/api/route/v1"
@@ -15,6 +16,8 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Resources represent api resources used in report
@@ -53,6 +56,15 @@ type NamespaceResources struct {
 }
 
 var listOptions metav1.ListOptions
+
+// ListMigClusters list all MigrationClusters
+func ListMigClusters(client ctrlclient.Client, ch chan<- []migv1alpha1.MigCluster) {
+	migClusters, err := migv1alpha1.ListClusters(client)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	ch <- migClusters
+}
 
 // ListGroupVersions list all GV
 func ListGroupVersions(client *kubernetes.Clientset, ch chan<- *metav1.APIGroupList) {

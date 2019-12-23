@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gildub/analyze/pkg/env"
-	"github.com/gildub/analyze/pkg/io/remotehost"
+	"github.com/gildub/phronetic/pkg/env"
+	"github.com/gildub/phronetic/pkg/io/remotehost"
 	legacyconfigv1 "github.com/openshift/api/legacyconfig/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,14 +70,14 @@ func TestFetchEnv(t *testing.T) {
 		{
 			name:     "Fetch remote ENV variable",
 			host:     "remote.test.com",
-			env:      "ANALYTICS_TEST_ENV",
+			env:      "PHRONETIC_TEST_ENV",
 			expected: "remote value",
 			remote:   true,
 		},
 		{
 			name:     "Fetch local ENV variable",
 			host:     "",
-			env:      "ANALYTICS_TEST_ENV",
+			env:      "PHRONETIC_TEST_ENV",
 			expected: "local value",
 			remote:   false,
 		},
@@ -89,7 +89,7 @@ func TestFetchEnv(t *testing.T) {
 				env.Config().Set("FetchFromRemote", true)
 			} else {
 				env.Config().Set("FetchFromRemote", false)
-				os.Setenv("ANALYTICS_TEST_ENV", "local value")
+				os.Setenv("PHRONETIC_TEST_ENV", "local value")
 			}
 
 			defer func() { remotehost.RunCMD = _RunCMD }()

@@ -18,8 +18,8 @@ import (
 	//Workaround go mod vendor issue 27063
 	_ "github.com/shurcooL/vfsgen"
 
-	"github.com/gildub/analyze/pkg/env"
-	"github.com/gildub/analyze/pkg/transform"
+	"github.com/gildub/phronetic/pkg/env"
+	"github.com/gildub/phronetic/pkg/transform"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -28,7 +28,7 @@ func init() {
 	cobra.OnInitialize()
 
 	// Get config file from CLI argument an save it to viper config
-	rootCmd.PersistentFlags().StringVar(&env.ConfigFile, "config", "", "config file (Default searches ./analyze.yaml, $HOME/analyze.yml)")
+	rootCmd.PersistentFlags().StringVar(&env.ConfigFile, "config", "", "config file (Default searches ./phronetic.yaml, $HOME/phronetic.yml)")
 
 	// Allow insecure host key if true
 	rootCmd.PersistentFlags().BoolP("allow-insecure-host", "i", false, "allow insecure ssh host key ")

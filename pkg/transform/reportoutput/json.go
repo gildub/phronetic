@@ -3,7 +3,7 @@ package reportoutput
 import (
 	"encoding/json"
 
-	"github.com/gildub/analyze/pkg/io"
+	"github.com/gildub/phronetic/pkg/io"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

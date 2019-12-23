@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/gildub/analyze/pkg/api"
+	"github.com/gildub/phronetic/pkg/api"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -16,8 +16,8 @@ import (
 
 const (
 	// AppName holds the name of this application
-	AppName = "analyze"
-	logFile = "analyze.log"
+	AppName = "phronetic"
+	logFile = "phronetic.log"
 )
 
 var (
@@ -39,7 +39,7 @@ func Config() *viper.Viper {
 // InitConfig initializes application's configuration
 func InitConfig() (err error) {
 	// Fill in environment variables that match
-	viperConfig.SetEnvPrefix("ANALYTICS")
+	viperConfig.SetEnvPrefix("PHRONETIC")
 	viperConfig.AutomaticEnv()
 
 	if err := setConfigLocation(); err != nil {
@@ -73,7 +73,7 @@ func InitConfig() (err error) {
 	return nil
 }
 
-// setConfigLocation sets location for analyze configuration
+// setConfigLocation sets location for phronetic configuration
 func setConfigLocation() (err error) {
 	var home string
 	// Find home directory.
@@ -85,7 +85,7 @@ func setConfigLocation() (err error) {
 
 	// Try to find config file if it wasn't provided as a flag
 	if ConfigFile == "" {
-		ConfigFile = path.Join(home, "analyze.yaml")
+		ConfigFile = path.Join(home, "phronetic.yaml")
 	}
 	viperConfig.SetConfigFile(ConfigFile)
 	return
@@ -124,6 +124,7 @@ func surveyMissingValues() error {
 	migClusterName := viperConfig.GetString("MigrationCluster")
 	// set current context to selected cluster for cclient-go
 	api.KubeConfig.CurrentContext = api.ClusterNames[migClusterName]
+
 	if err := api.CreateK8sClient(migClusterName); err != nil {
 		return errors.Wrap(err, "k8s api client failed to create")
 	}
