@@ -1,0 +1,22 @@
+# Binaries for programs and plugins
+/bin/
+/data/
+/local/
+*.swo
+*.swp
+**/testdata/out/*
+
+# Standard and 3rd party lib ignored - use go tool to regenerate
+/src/*.*/
+
+# Test binary, build with `go test -c`
+*.test
+
+# Test coverage 
+coverage.*
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+*.log
+

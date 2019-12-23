@@ -1,0 +1,10 @@
+clustername: "somename"
+configsource: remote
+targetclustername: ""
+hostname: "master-0.test.example.com"
+manifests: true
+reporting: true
+sshlogin: "root"
+sshport: 22
+sshprivatekey: "/home/test/.ssh/testkey"
+workdir: "./data"

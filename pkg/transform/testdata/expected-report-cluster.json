@@ -1,0 +1,225 @@
+{
+ "cluster": {
+  "nodes": [
+   {
+    "name": "test-master",
+    "masterNode": true,
+    "resources": {
+     "cpu": "2",
+     "memoryConsumed": "2Ki",
+     "memoryCapacity": "2Ki",
+     "runningPods": "0",
+     "podCapacity": "10"
+    }
+   }
+  ],
+  "quotas": [
+   {
+    "name": "test-quota1",
+    "quota": {
+     "hard": {
+      "testkey": "99"
+     }
+    },
+    "selector": {
+     "labels": null,
+     "annotations": null
+    }
+   }
+  ],
+  "namespaces": [
+   {
+    "name": "testnamespace1",
+    "latestChange": "2009-11-17T20:34:58Z",
+    "resources": {
+     "containerCount": 0,
+     "cpuTotal": "0",
+     "memoryTotal": "0"
+    },
+    "pods": [
+     {
+      "name": "test-pod1"
+     },
+     {
+      "name": "test-pod2"
+     }
+    ],
+    "routes": [
+     {
+      "name": "route1",
+      "host": "testhost",
+      "path": "testpath",
+      "alternateBackends": [
+       {
+        "kind": "testkind",
+        "name": "testname",
+        "weight": null
+       }
+      ],
+      "tls": {
+       "termination": "edge"
+      },
+      "to": {
+       "kind": "testkindTo",
+       "name": "testTo",
+       "weight": null
+      },
+      "wildcardPolicy": "None"
+     }
+    ],
+    "daemonSets": [
+     {
+      "name": "testDaemonSet",
+      "latestChange": "2019-07-07T08:45:35Z"
+     }
+    ],
+    "deployments": [
+     {
+      "name": "testDeployment",
+      "latestChange": "2019-07-07T08:45:35Z"
+     }
+    ],
+    "quotas": [
+     {
+      "name": "resourcequota1",
+      "hard": {
+       "configmaps": "10",
+       "persistentvolumeclaims": "4",
+       "replicationcontrollers": "20",
+       "secrets": "10",
+       "services": "10"
+      },
+      "selector": {}
+     }
+    ],
+    "securityContextConstraints": [
+     "testscc1"
+    ],
+    "persistentVolumeClaims": [
+     {
+      "name": "testPVC",
+      "pvname": "testpv",
+      "accessModes": [
+       "testmode"
+      ],
+      "storageClass": "teststorageclass",
+      "capacity": {
+       "cpu": "1",
+       "memory": "1"
+      },
+      "persistentVolumeReclaimPolicy": "testpolicy"
+     }
+    ]
+   }
+  ],
+  "pvs": [
+   {
+    "name": "testpv",
+    "driver": {
+     "nfs": {
+      "server": "example.com",
+      "path": ""
+     }
+    },
+    "storageClass": "testclass",
+    "capacity": {
+     "cpu": "1",
+     "memory": "1"
+    },
+    "phase": "Pending",
+    "persistentVolumeReclaimPolicy": "testpolicy"
+   }
+  ],
+  "storageClasses": [
+   {
+    "name": "testclass",
+    "provisioner": "testprovisioner"
+   }
+  ],
+  "rbacreport": {
+   "users": [
+    {
+     "name": "testuser1",
+     "fullName": "full name1",
+     "identities": [
+      "test-identity1",
+      "test-identity2"
+     ],
+     "groups": [
+      "group1",
+      "group2"
+     ]
+    },
+    {
+     "name": "testuser2",
+     "fullName": "full name2",
+     "identities": [
+      "test-identity1",
+      "test-identity2"
+     ],
+     "groups": [
+      "group1",
+      "group2"
+     ]
+    }
+   ],
+   "group": [
+    {
+     "name": "testgroup1",
+     "users": [
+      "testuser1"
+     ]
+    },
+    {
+     "name": "testgroup2",
+     "users": [
+      "testuser2"
+     ]
+    }
+   ],
+   "roles": [
+    {
+     "namespace": "testnamespace1",
+     "roles": [
+      {
+       "name": "testrole1"
+      }
+     ]
+    }
+   ],
+   "clusterRoles": [
+    {
+     "name": "testrole1"
+    }
+   ],
+   "clusterRoleBindings": [
+    {
+     "name": "testbinding1",
+     "userNames": [
+      "testuser1"
+     ],
+     "groupNames": [
+      "testgroup1"
+     ],
+     "subjects": null,
+     "roleRef": {}
+    }
+   ],
+   "securityContextConstraints": [
+    {
+     "name": "testscc1",
+     "users": [
+      "testuser1",
+      "testrole:serviceaccount:testnamespace1:testsa"
+     ],
+     "groups": [
+      "testgroup1"
+     ],
+     "namespaces": [
+      "testnamespace1"
+     ]
+    }
+   ]
+  }
+ }
+}
