@@ -58,8 +58,8 @@ type NamespaceResources struct {
 var listOptions metav1.ListOptions
 
 // ListMigClusters list all MigrationClusters
-func ListMigClusters(client ctrlclient.Client, ch chan<- []migv1alpha1.MigCluster) {
-	migClusters, err := migv1alpha1.ListClusters(client)
+func ListMigClusters(client *ctrlclient.Client, ch chan<- []migv1alpha1.MigCluster) {
+	migClusters, err := migv1alpha1.ListClusters(*client)
 	if err != nil {
 		logrus.Fatal(err)
 	}

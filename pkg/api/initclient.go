@@ -6,14 +6,18 @@ import (
 	"os"
 	"runtime"
 
+	migv1alpha1 "github.com/fusor/mig-controller/pkg/apis/migration/v1alpha1"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -21,6 +25,8 @@ var (
 	KubeConfig *clientcmdapi.Config
 	// ClusterNames contains names of contexts and cluster
 	ClusterNames = make(map[string]string)
+	// CtrlClient k8s controller client for migration cluster
+	CtrlClient *client.Client
 	// K8sClient k8s api client for source cluster
 	K8sClient *kubernetes.Clientset
 	// K8sDstClient k8s api client for target cluster
@@ -73,6 +79,22 @@ func getKubeConfigPath() (string, error) {
 	}
 
 	return kubeConfigPath, nil
+}
+
+// CreateCtrlClient create k8s Controller client using cluster from kubeconfig context
+func CreateCtrlClient(contextCluster string) error {
+	if CtrlClient == nil {
+		config, err := buildConfig(contextCluster)
+		if err != nil {
+			return err
+		}
+		crScheme := k8sruntime.NewScheme()
+		migv1alpha1.AddToScheme(crScheme)
+		CtrlClient = NewCtrlClientorDie(config, client.Options{Scheme: crScheme})
+		logrus.Debugf("Kubernetes Controller client initialized for %s", contextCluster)
+	}
+
+	return nil
 }
 
 // CreateK8sDstClient create api client using cluster from kubeconfig context

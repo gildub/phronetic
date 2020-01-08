@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/gildub/phronetic/pkg/api"
@@ -103,88 +104,93 @@ func (e ClusterExtraction) Validate() (err error) { return }
 
 // Extract collects data for cluster report
 func (e ClusterTransform) Extract() (Extraction, error) {
-	chanDstGVs := make(chan *metav1.APIGroupList)
-	chanGVs := make(chan *metav1.APIGroupList)
-	chanNodes := make(chan *k8sapicore.NodeList)
-	chanClusterQuotas := make(chan *o7tapiquota.ClusterResourceQuotaList)
-	chanNamespaces := make(chan *k8sapicore.NamespaceList)
-	chanPVs := make(chan *k8sapicore.PersistentVolumeList)
-	chanUsers := make(chan *o7tapiuser.UserList)
-	chanGroups := make(chan *o7tapiuser.GroupList)
-	chanClusterRoles := make(chan *o7tapiauth.ClusterRoleList)
-	chanClusterRolesListBindings := make(chan *o7tapiauth.ClusterRoleBindingList)
-	chanStorageClassList := make(chan *k8sapistorage.StorageClassList)
-	chanSecurityContextConstraints := make(chan *o7tapisecurity.SecurityContextConstraintsList)
+	if api.CtrlClient != nil {
 
-	if api.K8sDstClient != nil {
-		go api.ListGroupVersions(api.K8sDstClient, chanDstGVs)
+		chanDstGVs := make(chan *metav1.APIGroupList)
+		chanGVs := make(chan *metav1.APIGroupList)
+		chanNodes := make(chan *k8sapicore.NodeList)
+		chanClusterQuotas := make(chan *o7tapiquota.ClusterResourceQuotaList)
+		chanNamespaces := make(chan *k8sapicore.NamespaceList)
+		chanPVs := make(chan *k8sapicore.PersistentVolumeList)
+		chanUsers := make(chan *o7tapiuser.UserList)
+		chanGroups := make(chan *o7tapiuser.GroupList)
+		chanClusterRoles := make(chan *o7tapiauth.ClusterRoleList)
+		chanClusterRolesListBindings := make(chan *o7tapiauth.ClusterRoleBindingList)
+		chanStorageClassList := make(chan *k8sapistorage.StorageClassList)
+		chanSecurityContextConstraints := make(chan *o7tapisecurity.SecurityContextConstraintsList)
+
+		if api.K8sDstClient != nil {
+			go api.ListGroupVersions(api.K8sDstClient, chanDstGVs)
+		}
+
+		go api.ListGroupVersions(api.K8sClient, chanGVs)
+		go api.ListNamespaces(api.K8sClient, chanNamespaces)
+		go api.ListNodes(api.K8sClient, chanNodes)
+		go api.ListQuotas(api.O7tClient, chanClusterQuotas)
+		go api.ListPVs(api.K8sClient, chanPVs)
+		go api.ListUsers(api.O7tClient, chanUsers)
+		go api.ListGroups(api.O7tClient, chanGroups)
+		go api.ListClusterRoles(api.O7tClient, chanClusterRoles)
+		go api.ListClusterRolesBindings(api.O7tClient, chanClusterRolesListBindings)
+		go api.ListSCC(api.O7tClient, chanSecurityContextConstraints)
+		go api.ListStorageClasses(api.K8sClient, chanStorageClassList)
+
+		extraction := &ClusterExtraction{}
+
+		// Map all namespaces to their resources
+		namespacesList := <-chanNamespaces
+		namespaceListSize := len(namespacesList.Items)
+		extraction.NamespaceList = make([]api.NamespaceResources, namespaceListSize, namespaceListSize)
+		for i, namespace := range namespacesList.Items {
+			namespaceResources := api.NamespaceResources{NamespaceName: namespace.Name}
+
+			chanQuotas := make(chan *k8sapicore.ResourceQuotaList)
+			chanPods := make(chan *k8sapicore.PodList)
+			chanRoutes := make(chan *o7tapiroute.RouteList)
+			chanDeployments := make(chan *v1beta1.DeploymentList)
+			chanDaemonSets := make(chan *extv1b1.DaemonSetList)
+			chanRoles := make(chan *o7tapiauth.RoleList)
+			chanPVCs := make(chan *k8sapicore.PersistentVolumeClaimList)
+
+			go api.ListResourceQuotas(api.K8sClient, namespace.Name, chanQuotas)
+			go api.ListPods(api.K8sClient, namespace.Name, chanPods)
+			go api.ListRoutes(api.O7tClient, namespace.Name, chanRoutes)
+			go api.ListDeployments(api.K8sClient, namespace.Name, chanDeployments)
+			go api.ListDaemonSets(api.K8sClient, namespace.Name, chanDaemonSets)
+			go api.ListRoles(api.O7tClient, namespace.Name, chanRoles)
+			go api.ListPVCs(api.K8sClient, namespace.Name, chanPVCs)
+
+			namespaceResources.ResourceQuotaList = <-chanQuotas
+			namespaceResources.PodList = <-chanPods
+			namespaceResources.RouteList = <-chanRoutes
+			namespaceResources.DeploymentList = <-chanDeployments
+			namespaceResources.DaemonSetList = <-chanDaemonSets
+			namespaceResources.RolesList = <-chanRoles
+			namespaceResources.PVCList = <-chanPVCs
+
+			extraction.NamespaceList[i] = namespaceResources
+		}
+
+		extraction.GroupVersions = <-chanGVs
+		extraction.NodeList = <-chanNodes
+		extraction.QuotaList = <-chanClusterQuotas
+		extraction.PersistentVolumeList = <-chanPVs
+		extraction.RBACResources.UsersList = <-chanUsers
+		extraction.RBACResources.GroupList = <-chanGroups
+		extraction.RBACResources.ClusterRolesList = <-chanClusterRoles
+		extraction.RBACResources.ClusterRolesBindingsList = <-chanClusterRolesListBindings
+		extraction.RBACResources.SecurityContextConstraintsList = <-chanSecurityContextConstraints
+		extraction.StorageClassList = <-chanStorageClassList
+
+		if api.K8sDstClient != nil {
+			extraction.DstGroupVersions = <-chanDstGVs
+			extraction.NewGVs = NewGroupVersions(extraction.GroupVersions, extraction.DstGroupVersions)
+		}
+
+		return *extraction, nil
 	}
 
-	go api.ListGroupVersions(api.K8sClient, chanGVs)
-	go api.ListNamespaces(api.K8sClient, chanNamespaces)
-	go api.ListNodes(api.K8sClient, chanNodes)
-	go api.ListQuotas(api.O7tClient, chanClusterQuotas)
-	go api.ListPVs(api.K8sClient, chanPVs)
-	go api.ListUsers(api.O7tClient, chanUsers)
-	go api.ListGroups(api.O7tClient, chanGroups)
-	go api.ListClusterRoles(api.O7tClient, chanClusterRoles)
-	go api.ListClusterRolesBindings(api.O7tClient, chanClusterRolesListBindings)
-	go api.ListSCC(api.O7tClient, chanSecurityContextConstraints)
-	go api.ListStorageClasses(api.K8sClient, chanStorageClassList)
-
-	extraction := &ClusterExtraction{}
-
-	// Map all namespaces to their resources
-	namespacesList := <-chanNamespaces
-	namespaceListSize := len(namespacesList.Items)
-	extraction.NamespaceList = make([]api.NamespaceResources, namespaceListSize, namespaceListSize)
-	for i, namespace := range namespacesList.Items {
-		namespaceResources := api.NamespaceResources{NamespaceName: namespace.Name}
-
-		chanQuotas := make(chan *k8sapicore.ResourceQuotaList)
-		chanPods := make(chan *k8sapicore.PodList)
-		chanRoutes := make(chan *o7tapiroute.RouteList)
-		chanDeployments := make(chan *v1beta1.DeploymentList)
-		chanDaemonSets := make(chan *extv1b1.DaemonSetList)
-		chanRoles := make(chan *o7tapiauth.RoleList)
-		chanPVCs := make(chan *k8sapicore.PersistentVolumeClaimList)
-
-		go api.ListResourceQuotas(api.K8sClient, namespace.Name, chanQuotas)
-		go api.ListPods(api.K8sClient, namespace.Name, chanPods)
-		go api.ListRoutes(api.O7tClient, namespace.Name, chanRoutes)
-		go api.ListDeployments(api.K8sClient, namespace.Name, chanDeployments)
-		go api.ListDaemonSets(api.K8sClient, namespace.Name, chanDaemonSets)
-		go api.ListRoles(api.O7tClient, namespace.Name, chanRoles)
-		go api.ListPVCs(api.K8sClient, namespace.Name, chanPVCs)
-
-		namespaceResources.ResourceQuotaList = <-chanQuotas
-		namespaceResources.PodList = <-chanPods
-		namespaceResources.RouteList = <-chanRoutes
-		namespaceResources.DeploymentList = <-chanDeployments
-		namespaceResources.DaemonSetList = <-chanDaemonSets
-		namespaceResources.RolesList = <-chanRoles
-		namespaceResources.PVCList = <-chanPVCs
-
-		extraction.NamespaceList[i] = namespaceResources
-	}
-
-	extraction.GroupVersions = <-chanGVs
-	extraction.NodeList = <-chanNodes
-	extraction.QuotaList = <-chanClusterQuotas
-	extraction.PersistentVolumeList = <-chanPVs
-	extraction.RBACResources.UsersList = <-chanUsers
-	extraction.RBACResources.GroupList = <-chanGroups
-	extraction.RBACResources.ClusterRolesList = <-chanClusterRoles
-	extraction.RBACResources.ClusterRolesBindingsList = <-chanClusterRolesListBindings
-	extraction.RBACResources.SecurityContextConstraintsList = <-chanSecurityContextConstraints
-	extraction.StorageClassList = <-chanStorageClassList
-
-	if api.K8sDstClient != nil {
-		extraction.DstGroupVersions = <-chanDstGVs
-		extraction.NewGVs = NewGroupVersions(extraction.GroupVersions, extraction.DstGroupVersions)
-	}
-
-	return *extraction, nil
+	return nil, errors.New("Baaaaad")
 }
 
 // NewGroupVersions returns the list of new GroupVersions available in destination but in source

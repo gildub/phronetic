@@ -4,9 +4,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	migv1alpha1 "github.com/fusor/mig-controller/pkg/apis/migration/v1alpha1"
 	"github.com/gildub/phronetic/pkg/api"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -122,14 +124,35 @@ func surveyMissingValues() error {
 	}
 
 	migClusterName := viperConfig.GetString("MigrationCluster")
-	// set current context to selected cluster for cclient-go
+	// set current context to selected cluster client
 	api.KubeConfig.CurrentContext = api.ClusterNames[migClusterName]
 
-	if err := api.CreateK8sClient(migClusterName); err != nil {
-		return errors.Wrap(err, "k8s api client failed to create")
+	if err := api.CreateCtrlClient(migClusterName); err != nil {
+		return errors.Wrap(err, "k8s controller client failed to create")
 	}
-	if err := api.CreateO7tClient(migClusterName); err != nil {
-		return errors.Wrap(err, "OpenShift api client failed to create")
+
+	chanMigClusters := make(chan []migv1alpha1.MigCluster)
+	go api.ListMigClusters(api.CtrlClient, chanMigClusters)
+	migClustersList := <-chanMigClusters
+
+	for _, cluster := range migClustersList {
+		if cluster.Spec.IsHostCluster {
+			if err := api.CreateK8sDstClient(migClusterName); err != nil {
+				return errors.Wrap(err, "k8s api client failed to create")
+			}
+		} else {
+			res2 := strings.Trim(cluster.Spec.URL, "https://")
+			otherCluster := strings.ReplaceAll(res2, ".", "-")
+			newContext := api.ClusterNames[otherCluster]
+			// set current context to selected cluster client
+			api.KubeConfig.CurrentContext = newContext
+			if err := api.CreateK8sClient(otherCluster); err != nil {
+				return errors.Wrap(err, "k8s api client failed to create")
+			}
+			if err := api.CreateO7tClient(otherCluster); err != nil {
+				return errors.Wrap(err, "OpenShift api client failed to create")
+			}
+		}
 	}
 
 	return nil
