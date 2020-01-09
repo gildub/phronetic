@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"sort"
-	"strings"
 
 	"github.com/gildub/phronetic/pkg/api"
 	o7tapiauth "github.com/openshift/api/authorization/v1"
@@ -201,12 +200,7 @@ type PVСReport struct {
 
 // GenClusterReport inserts report values into structures for json output
 func GenClusterReport(apiResources api.Resources) (clusterReport Report) {
-	clusterReport.ReportQuotas(apiResources)
-	clusterReport.ReportPVs(apiResources)
 	clusterReport.ReportNamespaces(apiResources)
-	clusterReport.ReportNodes(apiResources)
-	clusterReport.ReportRBAC(apiResources)
-	clusterReport.ReportStorageClasses(apiResources)
 	clusterReport.ReportNewGVs(apiResources.NewGVs)
 	return
 }
@@ -272,23 +266,6 @@ func (clusterReport *Report) ReportNamespaces(apiResources api.Resources) {
 	})
 }
 
-// ReportNodes fills in information about nodes
-func (clusterReport *Report) ReportNodes(apiResources api.Resources) {
-	logrus.Info("ClusterReport::ReportNodes")
-
-	for _, node := range apiResources.NodeList.Items {
-		nodeReport := NodeReport{
-			Name: node.ObjectMeta.Name,
-		}
-
-		isMaster, ok := node.ObjectMeta.Labels["node-role.kubernetes.io/master"]
-		nodeReport.MasterNode = ok && isMaster == "true"
-
-		ReportNodeResources(&nodeReport, node.Status, apiResources)
-		clusterReport.Nodes = append(clusterReport.Nodes, nodeReport)
-	}
-}
-
 // ReportNodeResources parse and insert info about consumed resources
 func ReportNodeResources(repotedNode *NodeReport, nodeStatus k8sapicore.NodeStatus, apiResources api.Resources) {
 	repotedNode.Resources.CPU = nodeStatus.Capacity.Cpu()
@@ -316,21 +293,6 @@ func ReportNodeResources(repotedNode *NodeReport, nodeStatus k8sapicore.NodeStat
 	repotedNode.Resources.RunningPods = podsRunning
 
 	repotedNode.Resources.PodCapacity = nodeStatus.Capacity.Pods()
-}
-
-// ReportQuotas creates report about cluster quotas
-func (clusterReport *Report) ReportQuotas(apiResources api.Resources) {
-	logrus.Info("ClusterReport::ReportQuotas")
-
-	for _, quota := range apiResources.QuotaList.Items {
-		quotaReport := QuotaReport{
-			Name:     quota.ObjectMeta.Name,
-			Quota:    quota.Spec.Quota,
-			Selector: quota.Spec.Selector,
-		}
-
-		clusterReport.Quotas = append(clusterReport.Quotas, quotaReport)
-	}
 }
 
 // ReportPods creates info about cluster pods
@@ -389,31 +351,6 @@ func ReportRoutes(reportedNamespace *NamespaceReport, routeList *o7tapiroute.Rou
 	}
 }
 
-// ReportPVs create report oabout pvs
-func (clusterReport *Report) ReportPVs(apiResources api.Resources) {
-	logrus.Info("ClusterReport::ReportPVs")
-	pvList := apiResources.PersistentVolumeList
-
-	// Go through all PV and save required information to report
-	for _, pv := range pvList.Items {
-		reportedPV := PVReport{
-			Name:          pv.Name,
-			Driver:        pv.Spec.PersistentVolumeSource,
-			StorageClass:  pv.Spec.StorageClassName,
-			Capacity:      pv.Spec.Capacity,
-			Phase:         pv.Status.Phase,
-			ReclaimPolicy: pv.Spec.PersistentVolumeReclaimPolicy,
-		}
-
-		clusterReport.PVs = append(clusterReport.PVs, reportedPV)
-	}
-
-	// we need to sort this for binary search later
-	sort.Slice(clusterReport.PVs, func(i, j int) bool {
-		return clusterReport.PVs[i].Name <= clusterReport.PVs[j].Name
-	})
-}
-
 // ReportPVCs generate PVC report
 func ReportPVCs(reporeportedNamespace *NamespaceReport, pvcList *k8scorev1.PersistentVolumeClaimList, pvList []PVReport) {
 	for _, pvc := range pvcList.Items {
@@ -442,131 +379,6 @@ func ReportPVCs(reporeportedNamespace *NamespaceReport, pvcList *k8scorev1.Persi
 		}
 
 		reporeportedNamespace.PVCs = append(reporeportedNamespace.PVCs, reportedPVC)
-	}
-}
-
-// ReportRBAC create report about RBAC policy
-func (clusterReport *Report) ReportRBAC(apiResources api.Resources) {
-	logrus.Info("ClusterReport::ReportRBAC")
-
-	clusterReport.RBACReport.Users = make([]OpenshiftUser, 0)
-	for _, user := range apiResources.RBACResources.UsersList.Items {
-		reportedUser := OpenshiftUser{
-			Name:       user.Name,
-			FullName:   user.FullName,
-			Identities: user.Identities,
-			Groups:     user.Groups,
-		}
-		clusterReport.RBACReport.Users = append(clusterReport.RBACReport.Users, reportedUser)
-	}
-
-	clusterReport.RBACReport.Groups = make([]OpenshiftGroup, 0)
-	for _, group := range apiResources.RBACResources.GroupList.Items {
-		reportedGroup := OpenshiftGroup{
-			Name:  group.Name,
-			Users: group.Users,
-		}
-
-		clusterReport.RBACReport.Groups = append(clusterReport.RBACReport.Groups, reportedGroup)
-	}
-
-	clusterReport.RBACReport.Roles = make([]OpenshiftNamespaceRole, 0)
-	for _, namespace := range apiResources.NamespaceList {
-		if len(namespace.RolesList.Items) == 0 {
-			continue
-		}
-
-		reportedNamespaceRoles := OpenshiftNamespaceRole{Namespace: namespace.NamespaceName}
-
-		reportedNamespaceRoles.Roles = make([]OpenshiftRole, 0)
-		for _, role := range namespace.RolesList.Items {
-			reportedRole := OpenshiftRole{
-				Name: role.Name,
-			}
-			reportedNamespaceRoles.Roles = append(reportedNamespaceRoles.Roles, reportedRole)
-		}
-
-		clusterReport.RBACReport.Roles = append(clusterReport.RBACReport.Roles, reportedNamespaceRoles)
-	}
-
-	clusterReport.RBACReport.ClusterRoles = make([]OpenshiftClusterRole, 0)
-	for _, clusterRole := range apiResources.RBACResources.ClusterRolesList.Items {
-		reportedClusterRole := OpenshiftClusterRole{
-			Name: clusterRole.Name,
-		}
-
-		clusterReport.RBACReport.ClusterRoles = append(clusterReport.RBACReport.ClusterRoles, reportedClusterRole)
-	}
-
-	clusterReport.RBACReport.ClusterRoleBindings = make([]OpenshiftClusterRoleBinding, 0)
-	for _, clusterRoleBinding := range apiResources.RBACResources.ClusterRolesBindingsList.Items {
-		reportedClusterRoleBinding := OpenshiftClusterRoleBinding{
-			Name:       clusterRoleBinding.Name,
-			UserNames:  clusterRoleBinding.UserNames,
-			GroupNames: clusterRoleBinding.GroupNames,
-			Subjects:   clusterRoleBinding.Subjects,
-			RoleRef:    clusterRoleBinding.RoleRef,
-		}
-
-		clusterReport.RBACReport.ClusterRoleBindings = append(clusterReport.RBACReport.ClusterRoleBindings, reportedClusterRoleBinding)
-	}
-
-	clusterReport.RBACReport.SecurityContextConstraints = make([]OpenshiftSecurityContextConstraints, 0)
-
-	for _, scc := range apiResources.RBACResources.SecurityContextConstraintsList.Items {
-		reportedSCC := OpenshiftSecurityContextConstraints{
-			Name:   scc.Name,
-			Users:  scc.Users,
-			Groups: scc.Groups,
-		}
-
-		// we need to create a dependency between scc and namespace, the only way is to do it
-		// using service accounts. Service accounts are listed in SCC's users list.
-		var idx int
-		for _, user := range scc.Users {
-			// Service account username format role:serviceaccount:namespace:serviceaccountname
-			splitUsername := strings.Split(user, ":")
-			if len(splitUsername) <= 1 { // safety check
-				continue
-			}
-
-			// if second element is serviceaccount then next element is namespace name
-			if splitUsername[1] == "serviceaccount" {
-				reportedSCC.Namespaces = append(reportedSCC.Namespaces, splitUsername[2])
-
-				// binary search for namespace in report and add current SCC name to it
-				idx = sort.Search(len(clusterReport.Namespaces), func(i int) bool {
-					return clusterReport.Namespaces[i].Name >= splitUsername[2]
-				})
-
-				clusterReport.Namespaces[idx].SecurityContextConstraints = append(clusterReport.Namespaces[idx].SecurityContextConstraints, scc.Name)
-			}
-		}
-
-		// deduplicate namespace names
-		reportedSCC.Namespaces = deduplicate(reportedSCC.Namespaces)
-
-		clusterReport.RBACReport.SecurityContextConstraints = append(clusterReport.RBACReport.SecurityContextConstraints, reportedSCC)
-	}
-
-	// deduplicate scc names
-	for i := range clusterReport.Namespaces {
-		clusterReport.Namespaces[i].SecurityContextConstraints = deduplicate(clusterReport.Namespaces[i].SecurityContextConstraints)
-	}
-}
-
-// ReportStorageClasses create report about storage classes
-func (clusterReport *Report) ReportStorageClasses(apiResources api.Resources) {
-	logrus.Info("ClusterReport::ReportStorageClasses")
-	// Go through all storage classes and save required information to report
-	storageClassList := apiResources.StorageClassList
-	for _, storageClass := range storageClassList.Items {
-		reportedStorageClass := StorageClassReport{
-			Name:        storageClass.Name,
-			Provisioner: storageClass.Provisioner,
-		}
-
-		clusterReport.StorageClasses = append(clusterReport.StorageClasses, reportedStorageClass)
 	}
 }
 
