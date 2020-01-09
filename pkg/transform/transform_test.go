@@ -1,13 +1,9 @@
 package transform
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"testing"
 
-	"github.com/gildub/phronetic/pkg/decode"
-	"github.com/gildub/phronetic/pkg/env"
-	legacyconfigv1 "github.com/openshift/api/legacyconfig/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

@@ -75,7 +75,6 @@ func Start() {
 	runner := NewRunner()
 
 	runner.Transform([]Transform{
-		// APITransform{},
 		ClusterTransform{},
 	})
 }
