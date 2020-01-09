@@ -58,12 +58,12 @@ type NamespaceResources struct {
 var listOptions metav1.ListOptions
 
 // ListMigClusters list all MigrationClusters
-func ListMigClusters(client *ctrlclient.Client, ch chan<- []migv1alpha1.MigCluster) {
+func ListMigClusters(client *ctrlclient.Client) []migv1alpha1.MigCluster {
 	migClusters, err := migv1alpha1.ListClusters(*client)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	ch <- migClusters
+	return migClusters
 }
 
 // ListGroupVersions list all GV

@@ -39,7 +39,7 @@ func init() {
 	env.Config().BindPFlag("Debug", rootCmd.PersistentFlags().Lookup("debug"))
 
 	// Migration cluster name for Kubeconfig context
-	rootCmd.PersistentFlags().Bool("migration-cluster", false, "Migration cluster")
+	rootCmd.PersistentFlags().StringP("migration-cluster", "c", "", "Migration cluster")
 	env.Config().BindPFlag("MigrationCluster", rootCmd.PersistentFlags().Lookup("migration-cluster"))
 
 	// Flag to generate manifests

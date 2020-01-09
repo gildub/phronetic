@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	migv1alpha1 "github.com/fusor/mig-controller/pkg/apis/migration/v1alpha1"
 	"github.com/gildub/phronetic/pkg/api"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -131,9 +130,7 @@ func surveyMissingValues() error {
 		return errors.Wrap(err, "k8s controller client failed to create")
 	}
 
-	chanMigClusters := make(chan []migv1alpha1.MigCluster)
-	go api.ListMigClusters(api.CtrlClient, chanMigClusters)
-	migClustersList := <-chanMigClusters
+	migClustersList := api.ListMigClusters(api.CtrlClient)
 
 	for _, cluster := range migClustersList {
 		if cluster.Spec.IsHostCluster {
@@ -198,8 +195,8 @@ func surveyReporting() error {
 }
 
 func surveyMigCluster() error {
-	hostname := viperConfig.GetString("Hostname")
-	if !viperConfig.InConfig("hostname") && hostname == "" {
+	migClusterName := viperConfig.GetString("MigrationCluster")
+	if !viperConfig.InConfig("MigrationCluster") && migClusterName == "" {
 		discoverCluster := ""
 		clusterName := ""
 		var err error
