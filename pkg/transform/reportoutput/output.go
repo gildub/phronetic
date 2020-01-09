@@ -26,24 +26,10 @@ type Report struct {
 }
 
 var (
-	htmlFileName = "report.html"
 	jsonFileName = "report.json"
 )
 
 // DumpReports creates OCDs files
 func DumpReports(r ReportOutput) {
-	// reportOutputFormat := env.Config().GetString("OutputFormat")
-	reportOutputFormat := "all"
-
-	switch reportOutputFormat {
-	case "json":
-		jsonOutput(r)
-	case "html":
-		htmlOutput(r)
-	case "all":
-		jsonOutput(r)
-		htmlOutput(r)
-	default:
-		panic("This format type is not supported")
-	}
+	jsonOutput(r)
 }

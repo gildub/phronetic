@@ -71,7 +71,7 @@ type Output interface {
 
 //Start generating manifests to be used with Openshift 4
 func Start() {
-	logrus.Info("Starting manifest and report generation")
+	logrus.Info("Starting analysis")
 	runner := NewRunner()
 
 	runner.Transform([]Transform{
@@ -101,21 +101,23 @@ func (r Runner) Transform(transforms []Transform) {
 			continue
 		}
 
-		outputs, err := extraction.Transform()
+		_, err = extraction.Transform()
 		if err != nil {
 			HandleError(err, transform.Name())
 			continue
 		}
 
-		for _, output := range outputs {
-			switch output.(type) {
-			case ManifestOutput:
-				if err := output.Flush(); err != nil {
-					HandleError(err, transform.Name())
-					continue
+		/*
+			for _, output := range outputs {
+				switch output.(type) {
+				case ManifestOutput:
+					if err := output.Flush(); err != nil {
+						HandleError(err, transform.Name())
+						continue
+					}
 				}
 			}
-		}
+		*/
 	}
 
 	err := FinalReportOutput.Flush()
@@ -123,7 +125,7 @@ func (r Runner) Transform(transforms []Transform) {
 		HandleError(err, "Report")
 	}
 
-	logrus.Info("Succesfully finished transformations")
+	logrus.Info("Succesfully finished analysis")
 }
 
 // NewRunner creates a new Runner
