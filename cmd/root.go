@@ -30,10 +30,6 @@ func init() {
 	// Get config file from CLI argument an save it to viper config
 	rootCmd.PersistentFlags().StringVar(&env.ConfigFile, "config", "", "config file (Default searches ./phronetic.yaml, $HOME/phronetic.yml)")
 
-	// Allow insecure host key if true
-	rootCmd.PersistentFlags().BoolP("allow-insecure-host", "i", false, "allow insecure ssh host key ")
-	env.Config().BindPFlag("InsecureHostKey", rootCmd.PersistentFlags().Lookup("allow-insecure-host"))
-
 	// Set log level
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "show debug ouput")
 	env.Config().BindPFlag("Debug", rootCmd.PersistentFlags().Lookup("debug"))
@@ -41,14 +37,6 @@ func init() {
 	// Migration cluster name for Kubeconfig context
 	rootCmd.PersistentFlags().StringP("migration-cluster", "c", "", "Migration cluster")
 	env.Config().BindPFlag("MigrationCluster", rootCmd.PersistentFlags().Lookup("migration-cluster"))
-
-	// Flag to generate manifests
-	rootCmd.PersistentFlags().BoolP("manifests", "m", true, "Generate manifests")
-	env.Config().BindPFlag("Manifests", rootCmd.PersistentFlags().Lookup("manifests"))
-
-	// Flag to generate reporting
-	rootCmd.PersistentFlags().BoolP("reporting", "r", true, "Generate reporting ")
-	env.Config().BindPFlag("Reporting", rootCmd.PersistentFlags().Lookup("reporting"))
 
 	// Don't output logs to console if true
 	rootCmd.PersistentFlags().BoolP("silent", "s", false, "silent mode, disable logging output to console")
@@ -61,9 +49,9 @@ func init() {
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "anytics",
-	Short: "Helps migration cluster configuration of a OCP 3.x cluster to OCP 4.x",
-	Long:  `Helps migration cluster configuration of a OCP 3.x cluster to OCP 4.x`,
+	Use:   "phronetic",
+	Short: "Helps validate migration of namespace",
+	Long:  `Helps validate migration of namespace`,
 	Run: func(cmd *cobra.Command, args []string) {
 		env.InitLogger()
 

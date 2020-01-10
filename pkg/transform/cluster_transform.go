@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/gildub/phronetic/pkg/api"
-	"github.com/gildub/phronetic/pkg/env"
 	"github.com/gildub/phronetic/pkg/transform/cluster"
 	o7tapiauth "github.com/openshift/api/authorization/v1"
 	o7tapiroute "github.com/openshift/api/route/v1"
@@ -31,16 +30,14 @@ type ClusterTransform struct {
 // Transform converts data collected from an OCP3 API into a useful output
 func (e ClusterExtraction) Transform() ([]Output, error) {
 	outputs := []Output{}
-	if env.Config().GetBool("Reporting") {
-		logrus.Info("ClusterTransform::Transform:Reports")
+	logrus.Info("ClusterTransform::Transform:Reports")
 
-		clusterReport := cluster.GenClusterReport(api.Resources{
-			NamespaceList: e.NamespaceList,
-			NewGVs:        e.NewGVs,
-		})
+	clusterReport := cluster.GenClusterReport(api.Resources{
+		NamespaceList: e.NamespaceList,
+		NewGVs:        e.NewGVs,
+	})
 
-		FinalReportOutput.Report.ClusterReport = clusterReport
-	}
+	FinalReportOutput.Report.ClusterReport = clusterReport
 
 	return outputs, nil
 }

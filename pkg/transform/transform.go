@@ -106,18 +106,6 @@ func (r Runner) Transform(transforms []Transform) {
 			HandleError(err, transform.Name())
 			continue
 		}
-
-		/*
-			for _, output := range outputs {
-				switch output.(type) {
-				case ManifestOutput:
-					if err := output.Flush(); err != nil {
-						HandleError(err, transform.Name())
-						continue
-					}
-				}
-			}
-		*/
 	}
 
 	err := FinalReportOutput.Flush()

@@ -97,14 +97,6 @@ func surveyMissingValues() error {
 		return err
 	}
 
-	if err := surveyManifests(); err != nil {
-		return err
-	}
-
-	if err := surveyReporting(); err != nil {
-		return err
-	}
-
 	if err := surveyMigCluster(); err != nil {
 		return err
 	}
@@ -152,45 +144,6 @@ func surveyMissingValues() error {
 		}
 	}
 
-	return nil
-}
-
-func surveyManifests() error {
-	manifests := viperConfig.GetString("Manifests")
-	if !viperConfig.InConfig("manifests") && manifests == "" {
-		prompt := &survey.Select{
-			Message: "Would you like to generate manifests?",
-			Options: []string{"true", "false"},
-		}
-		if err := survey.AskOne(prompt, &manifests); err != nil {
-			return err
-		}
-		if manifests == "false" {
-			viperConfig.Set("Manifests", false)
-		} else {
-			viperConfig.Set("Manifests", true)
-		}
-	}
-	return nil
-}
-
-func surveyReporting() error {
-	reporting := viperConfig.GetString("Reporting")
-	if !viperConfig.InConfig("reporting") && reporting == "" {
-		prompt := &survey.Select{
-			Message: "Would you like reporting?",
-			Options: []string{"true", "false"},
-		}
-		if err := survey.AskOne(prompt, &reporting); err != nil {
-			return err
-		}
-		if reporting == "false" {
-			viperConfig.Set("Reporting", false)
-		} else {
-			viperConfig.Set("Reporting", true)
-		}
-
-	}
 	return nil
 }
 
