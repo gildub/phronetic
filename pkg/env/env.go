@@ -101,6 +101,14 @@ func surveyMissingValues() error {
 		return err
 	}
 
+	if err := surveyNamespace(); err != nil {
+		return err
+	}
+
+	if err := surveyMigPlan(); err != nil {
+		return err
+	}
+
 	if viperConfig.GetString("WorkDir") == "" {
 		workDir := "."
 		prompt := &survey.Input{
@@ -181,6 +189,37 @@ func surveyMigCluster() error {
 	}
 
 	return nil
+}
+
+func surveyNamespace() error {
+	// Ask namespace to run analysis for
+	namespace := ""
+	if viperConfig.GetString("Namespace") == "" {
+		prompt := &survey.Input{
+			Message: "What namespace to inspect?",
+		}
+		if err := survey.AskOne(prompt, &namespace); err != nil {
+			return err
+		}
+		viperConfig.Set("Namespace", &namespace)
+	}
+	return nil
+}
+
+func surveyMigPlan() error {
+	// Ask MigPlan to run analysis for
+	migPlan := ""
+	if viperConfig.GetString("MigPlan") == "" {
+		prompt := &survey.Input{
+			Message: "What MigPlan to search for?",
+		}
+		if err := survey.AskOne(prompt, &migPlan); err != nil {
+			return err
+		}
+		viperConfig.Set("MigPlan", &migPlan)
+	}
+	return nil
+
 }
 
 // discoverMigCluster Get kubeconfig using $KUBECONFIG, if not try ~/.kube/config

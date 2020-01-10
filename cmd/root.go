@@ -38,6 +38,14 @@ func init() {
 	rootCmd.PersistentFlags().StringP("migration-cluster", "c", "", "Migration cluster")
 	env.Config().BindPFlag("MigrationCluster", rootCmd.PersistentFlags().Lookup("migration-cluster"))
 
+	// Namespace to inspect
+	rootCmd.PersistentFlags().StringP("namespace", "n", "", "Namespace")
+	env.Config().BindPFlag("Namespace", rootCmd.PersistentFlags().Lookup("namespace"))
+
+	// MigPlan to search for
+	rootCmd.PersistentFlags().StringP("migplan", "m", "", "MigPlan")
+	env.Config().BindPFlag("MigPlan", rootCmd.PersistentFlags().Lookup("migplan"))
+
 	// Don't output logs to console if true
 	rootCmd.PersistentFlags().BoolP("silent", "s", false, "silent mode, disable logging output to console")
 	env.Config().BindPFlag("Silent", rootCmd.PersistentFlags().Lookup("silent"))
