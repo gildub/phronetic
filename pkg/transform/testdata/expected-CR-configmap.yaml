@@ -1,8 +1,0 @@
-apiVersion: v1
-data:
-  ca.crt: 'testval: 123'
-kind: ConfigMap
-metadata:
-  creationTimestamp: null
-  name: testname
-  namespace: openshift-config
