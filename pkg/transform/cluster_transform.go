@@ -4,14 +4,10 @@ import (
 	"errors"
 
 	"github.com/gildub/phronetic/pkg/api"
+	"github.com/gildub/phronetic/pkg/env"
 	"github.com/gildub/phronetic/pkg/transform/cluster"
-	o7tapiauth "github.com/openshift/api/authorization/v1"
-	o7tapiroute "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/api/apps/v1beta1"
-	k8sapicore "k8s.io/api/core/v1"
-	extv1b1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -33,8 +29,8 @@ func (e ClusterExtraction) Transform() ([]Output, error) {
 	logrus.Info("ClusterTransform::Transform:Reports")
 
 	clusterReport := cluster.GenClusterReport(api.Resources{
-		NamespaceList: e.NamespaceList,
-		NewGVs:        e.NewGVs,
+		NamespaceResources: e.NamespaceResources,
+		NewGroupVersions:   e.NewGroupVersions,
 	})
 
 	FinalReportOutput.Report.ClusterReport = clusterReport
@@ -48,58 +44,21 @@ func (e ClusterExtraction) Validate() (err error) { return }
 // Extract collects data for cluster report
 func (e ClusterTransform) Extract() (Extraction, error) {
 	if api.CtrlClient != nil {
-		chanDstGVs := make(chan *metav1.APIGroupList)
-		chanGVs := make(chan *metav1.APIGroupList)
-		chanNamespaces := make(chan *k8sapicore.NamespaceList)
-
-		if api.K8sDstClient != nil {
-			go api.ListGroupVersions(api.K8sDstClient, chanDstGVs)
-		}
-
-		go api.ListGroupVersions(api.K8sClient, chanGVs)
-		go api.ListNamespaces(api.K8sClient, chanNamespaces)
 		extraction := &ClusterExtraction{}
+		namespace := env.Config().GetString("Namespace")
+		namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
 
-		// Map all namespaces to their resources
-		namespacesList := <-chanNamespaces
-		namespaceListSize := len(namespacesList.Items)
-		extraction.NamespaceList = make([]api.NamespaceResources, namespaceListSize, namespaceListSize)
-		for i, namespace := range namespacesList.Items {
-			namespaceResources := api.NamespaceResources{NamespaceName: namespace.Name}
+		namespaceResources := api.NamespaceResources{Namespace: namespaceResource}
+		namespaceResources.ResourceQuotaList = api.ListResourceQuotas(api.K8sSrcClient, namespaceResource.Name)
+		namespaceResources.PodList = api.ListPods(api.K8sSrcClient, namespaceResource.Name)
+		namespaceResources.DeploymentList = api.ListDeployments(api.K8sSrcClient, namespaceResource.Name)
+		namespaceResources.DaemonSetList = api.ListDaemonSets(api.K8sSrcClient, namespaceResource.Name)
+		namespaceResources.PVCList = api.ListPVCs(api.K8sSrcClient, namespaceResource.Name)
 
-			chanQuotas := make(chan *k8sapicore.ResourceQuotaList)
-			chanPods := make(chan *k8sapicore.PodList)
-			chanRoutes := make(chan *o7tapiroute.RouteList)
-			chanDeployments := make(chan *v1beta1.DeploymentList)
-			chanDaemonSets := make(chan *extv1b1.DaemonSetList)
-			chanRoles := make(chan *o7tapiauth.RoleList)
-			chanPVCs := make(chan *k8sapicore.PersistentVolumeClaimList)
-
-			go api.ListResourceQuotas(api.K8sClient, namespace.Name, chanQuotas)
-			go api.ListPods(api.K8sClient, namespace.Name, chanPods)
-			go api.ListRoutes(api.O7tClient, namespace.Name, chanRoutes)
-			go api.ListDeployments(api.K8sClient, namespace.Name, chanDeployments)
-			go api.ListDaemonSets(api.K8sClient, namespace.Name, chanDaemonSets)
-			go api.ListRoles(api.O7tClient, namespace.Name, chanRoles)
-			go api.ListPVCs(api.K8sClient, namespace.Name, chanPVCs)
-
-			namespaceResources.ResourceQuotaList = <-chanQuotas
-			namespaceResources.PodList = <-chanPods
-			namespaceResources.RouteList = <-chanRoutes
-			namespaceResources.DeploymentList = <-chanDeployments
-			namespaceResources.DaemonSetList = <-chanDaemonSets
-			namespaceResources.RolesList = <-chanRoles
-			namespaceResources.PVCList = <-chanPVCs
-
-			extraction.NamespaceList[i] = namespaceResources
-		}
-
-		extraction.GroupVersions = <-chanGVs
-
-		if api.K8sDstClient != nil {
-			extraction.DstGroupVersions = <-chanDstGVs
-			extraction.NewGVs = NewGroupVersions(extraction.GroupVersions, extraction.DstGroupVersions)
-		}
+		extraction.NamespaceResources = &namespaceResources
+		extraction.SrcGroupVersions = api.ListGroupVersions(api.K8sSrcClient)
+		extraction.DstGroupVersions = api.ListGroupVersions(api.K8sDstClient)
+		extraction.NewGroupVersions = NewGroupVersions(extraction.DstGroupVersions, extraction.DstGroupVersions)
 
 		return *extraction, nil
 	}

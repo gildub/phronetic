@@ -6,23 +6,7 @@ import (
 
 // ReportOutput holds a collection of reports to be written to file
 type ReportOutput struct {
-	ClusterReport    cluster.Report    `json:"cluster,omitempty"`
-	ComponentReports []ComponentReport `json:"components,omitempty"`
-}
-
-// ComponentReport holds a collection of ocp3 config reports
-type ComponentReport struct {
-	Component string   `json:"component"`
-	Reports   []Report `json:"reports"`
-}
-
-// Report of OCP 4 component configuration compatibility
-type Report struct {
-	Name       string `json:"name"`
-	Kind       string `json:"kind"`
-	Supported  bool   `json:"supported"`
-	Confidence int    `json:"confidence"`
-	Comment    string `json:"comment"`
+	ClusterReport cluster.Report `json:"cluster,omitempty"`
 }
 
 var (

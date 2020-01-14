@@ -4,9 +4,6 @@ import (
 	"sort"
 
 	"github.com/gildub/phronetic/pkg/api"
-	o7tapiauth "github.com/openshift/api/authorization/v1"
-	o7tapiquota "github.com/openshift/api/quota/v1"
-	o7tapiroute "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/api/apps/v1beta1"
@@ -19,13 +16,11 @@ import (
 
 // Report represents json report of k8s resources
 type Report struct {
-	Nodes          []NodeReport         `json:"nodes"`
-	Quotas         []QuotaReport        `json:"quotas"`
-	Namespaces     []NamespaceReport    `json:"namespaces,omitempty"`
-	PVs            []PVReport           `json:"pvs,omitempty"`
-	StorageClasses []StorageClassReport `json:"storageClasses,omitempty"`
-	RBACReport     RBACReport           `json:"rbacreport,omitempty"`
-	NewGVs         []NewGVsReport       `json:"newGroupVersions,omitempty"`
+	Nodes            []NodeReport             `json:"nodes"`
+	Namespace        NamespaceReport          `json:"namespace,omitempty"`
+	PVs              []PVReport               `json:"pvs,omitempty"`
+	StorageClasses   []StorageClassReport     `json:"storageClasses,omitempty"`
+	NewGroupVersions []NewGroupVersionsReport `json:"newGroupVersions,omitempty"`
 }
 
 // NodeReport represents json report of k8s nodes
@@ -46,28 +41,19 @@ type NodeResources struct {
 
 // NamespaceReport represents json report of k8s namespaces
 type NamespaceReport struct {
-	Name                       string                   `json:"name"`
-	LatestChange               k8sMeta.Time             `json:"latestChange,omitempty"`
-	Resources                  ContainerResourcesReport `json:"resources,omitempty"`
-	Pods                       []PodReport              `json:"pods,omitempty"`
-	Routes                     []RouteReport            `json:"routes,omitempty"`
-	DaemonSets                 []DaemonSetReport        `json:"daemonSets,omitempty"`
-	Deployments                []DeploymentReport       `json:"deployments,omitempty"`
-	Quotas                     []ResourceQuotaReport    `json:"quotas,omitempty"`
-	SecurityContextConstraints []string                 `json:"securityContextConstraints,omitempty"`
-	PVCs                       []PVСReport              `json:"persistentVolumeClaims,omitempty"`
+	Name         string                   `json:"name"`
+	LatestChange k8sMeta.Time             `json:"latestChange,omitempty"`
+	Resources    ContainerResourcesReport `json:"resources,omitempty"`
+	Pods         []PodReport              `json:"pods,omitempty"`
+	DaemonSets   []DaemonSetReport        `json:"daemonSets,omitempty"`
+	Deployments  []DeploymentReport       `json:"deployments,omitempty"`
+	Quotas       []ResourceQuotaReport    `json:"quotas,omitempty"`
+	PVCs         []PVСReport              `json:"persistentVolumeClaims,omitempty"`
 }
 
 // PodReport represents json report of k8s pods
 type PodReport struct {
 	Name string `json:"name"`
-}
-
-// QuotaReport represents json report of o7t cluster quotas
-type QuotaReport struct {
-	Name     string                                   `json:"name"`
-	Quota    k8sapicore.ResourceQuotaSpec             `json:"quota,omitempty"`
-	Selector o7tapiquota.ClusterResourceQuotaSelector `json:"selector,omitempty"`
 }
 
 // ResourceQuotaReport represents json report of Quota resources
@@ -76,17 +62,6 @@ type ResourceQuotaReport struct {
 	Hard          k8scorev1.ResourceList          `json:"hard,omitempty"`
 	ScopeSelector *k8sapicore.ScopeSelector       `json:"selector,omitempty"`
 	Scopes        []k8sapicore.ResourceQuotaScope `json:"scopes,omitempty"`
-}
-
-// RouteReport represents json report of k8s pods
-type RouteReport struct {
-	Name              string                             `json:"name"`
-	Host              string                             `json:"host"`
-	Path              string                             `json:"path,omitempty"`
-	AlternateBackends []o7tapiroute.RouteTargetReference `json:"alternateBackends,omitempty"`
-	TLS               *o7tapiroute.TLSConfig             `json:"tls,omitempty"`
-	To                o7tapiroute.RouteTargetReference   `json:"to"`
-	WildcardPolicy    o7tapiroute.WildcardPolicyType     `json:"wildcardPolicy"`
 }
 
 // DaemonSetReport represents json report of k8s DaemonSet relevant information
@@ -124,68 +99,9 @@ type StorageClassReport struct {
 	Provisioner string `json:"provisioner"`
 }
 
-// RBACReport contains RBAC report
-type RBACReport struct {
-	Users                      []OpenshiftUser                       `json:"users"`
-	Groups                     []OpenshiftGroup                      `json:"group"`
-	Roles                      []OpenshiftNamespaceRole              `json:"roles"`
-	ClusterRoles               []OpenshiftClusterRole                `json:"clusterRoles"`
-	ClusterRoleBindings        []OpenshiftClusterRoleBinding         `json:"clusterRoleBindings"`
-	SecurityContextConstraints []OpenshiftSecurityContextConstraints `json:"securityContextConstraints"`
-}
-
-// NewGVsReport represents json report of k8s storage classes
-type NewGVsReport struct {
+// NewGroupVersionsReport represents json report of k8s storage classes
+type NewGroupVersionsReport struct {
 	GroupVersion string `json:"groupversion"`
-}
-
-// OpenshiftUser wrapper around openshift user
-type OpenshiftUser struct {
-	Name       string   `json:"name"`
-	FullName   string   `json:"fullName,omitempty" protobuf:"bytes,2,opt,name=fullName"`
-	Identities []string `json:"identities" protobuf:"bytes,3,rep,name=identities"`
-	Groups     []string `json:"groups" protobuf:"bytes,4,rep,name=groups"`
-}
-
-// OpenshiftGroup wrapper around openshift group
-type OpenshiftGroup struct {
-	Name  string   `json:"name"`
-	Users []string `json:"users" protobuf:"bytes,2,rep,name=users"`
-}
-
-// OpenshiftNamespaceRole represent roles mapped to namespaces
-type OpenshiftNamespaceRole struct {
-	Namespace string          `json:"namespace"`
-	Roles     []OpenshiftRole `json:"roles"`
-}
-
-// OpenshiftRole wrapper around openshift role
-type OpenshiftRole struct {
-	Name  string                  `json:"name"`
-	Rules []o7tapiauth.PolicyRule `json:"rules,omitempty" protobuf:"bytes,2,rep,name=rules"`
-}
-
-// OpenshiftClusterRole wrapper around cluster role
-type OpenshiftClusterRole struct {
-	Name  string                  `json:"name"`
-	Rules []o7tapiauth.PolicyRule `json:"rules,omitempty" protobuf:"bytes,2,rep,name=rules"`
-}
-
-// OpenshiftClusterRoleBinding wrapper around openshift cluster role bindings
-type OpenshiftClusterRoleBinding struct {
-	Name       string                      `json:"name"`
-	UserNames  o7tapiauth.OptionalNames    `json:"userNames" protobuf:"bytes,2,rep,name=userNames"`
-	GroupNames o7tapiauth.OptionalNames    `json:"groupNames" protobuf:"bytes,3,rep,name=groupNames"`
-	Subjects   []k8scorev1.ObjectReference `json:"subjects" protobuf:"bytes,4,rep,name=subjects"`
-	RoleRef    k8scorev1.ObjectReference   `json:"roleRef" protobuf:"bytes,5,opt,name=roleRef"`
-}
-
-// OpenshiftSecurityContextConstraints wrapper aroung opeshift scc
-type OpenshiftSecurityContextConstraints struct {
-	Name       string   `json:"name"`
-	Users      []string `json:"users" protobuf:"bytes,18,rep,name=users"`
-	Groups     []string `json:"groups" protobuf:"bytes,19,rep,name=groups"`
-	Namespaces []string `json:"namespaces,omitempty"`
 }
 
 // PVСReport represents json report of k8s PVs
@@ -200,8 +116,8 @@ type PVСReport struct {
 
 // GenClusterReport inserts report values into structures for json output
 func GenClusterReport(apiResources api.Resources) (clusterReport Report) {
-	clusterReport.ReportNamespaces(apiResources)
-	clusterReport.ReportNewGVs(apiResources.NewGVs)
+	clusterReport.ReportNamespaceResources(apiResources.NamespaceResources)
+	clusterReport.ReportNewGVs(apiResources.NewGroupVersions)
 	return
 }
 
@@ -243,27 +159,19 @@ func ReportDeployments(reportedNamespace *NamespaceReport, deploymentList *v1bet
 	}
 }
 
-// ReportNamespaces fills in information about Namespaces
-func (clusterReport *Report) ReportNamespaces(apiResources api.Resources) {
-	logrus.Info("ClusterReport::ReportNamespaces")
+// ReportNamespaceResources fills in information about resources of a namespace
+func (clusterReport *Report) ReportNamespaceResources(apiResources *api.NamespaceResources) {
+	logrus.Info("ClusterReport::ReportNamespaceResources")
 
-	for _, resources := range apiResources.NamespaceList {
-		reportedNamespace := NamespaceReport{Name: resources.NamespaceName}
+	reportedNamespace := NamespaceReport{Name: apiResources.Namespace.Name}
 
-		ReportResourceQuotas(&reportedNamespace, resources.ResourceQuotaList)
-		ReportPods(&reportedNamespace, resources.PodList)
-		ReportResources(&reportedNamespace, resources.PodList)
-		ReportRoutes(&reportedNamespace, resources.RouteList)
-		ReportDeployments(&reportedNamespace, resources.DeploymentList)
-		ReportDaemonSets(&reportedNamespace, resources.DaemonSetList)
-		ReportPVCs(&reportedNamespace, resources.PVCList, clusterReport.PVs)
-		clusterReport.Namespaces = append(clusterReport.Namespaces, reportedNamespace)
-	}
-
-	// we need to sort this for binary search later
-	sort.Slice(clusterReport.Namespaces, func(i, j int) bool {
-		return clusterReport.Namespaces[i].Name <= clusterReport.Namespaces[j].Name
-	})
+	ReportResourceQuotas(&reportedNamespace, apiResources.ResourceQuotaList)
+	ReportPods(&reportedNamespace, apiResources.PodList)
+	ReportResources(&reportedNamespace, apiResources.PodList)
+	ReportDeployments(&reportedNamespace, apiResources.DeploymentList)
+	ReportDaemonSets(&reportedNamespace, apiResources.DaemonSetList)
+	ReportPVCs(&reportedNamespace, apiResources.PVCList, clusterReport.PVs)
+	clusterReport.Namespace = reportedNamespace
 }
 
 // ReportNodeResources parse and insert info about consumed resources
@@ -280,13 +188,12 @@ func ReportNodeResources(repotedNode *NodeReport, nodeStatus k8sapicore.NodeStat
 	repotedNode.Resources.MemoryConsumed = memConsumed
 
 	var runningPodsCount int64
-	for _, resources := range apiResources.NamespaceList {
-		for _, pod := range resources.PodList.Items {
-			if pod.Spec.NodeName == repotedNode.Name {
-				runningPodsCount++
-			}
+	for _, pod := range apiResources.NamespaceResources.PodList.Items {
+		if pod.Spec.NodeName == repotedNode.Name {
+			runningPodsCount++
 		}
 	}
+
 	podsRunning := new(resource.Quantity)
 	podsRunning.Set(runningPodsCount)
 	podsRunning.Format = resource.DecimalSI
@@ -334,23 +241,6 @@ func ReportResources(reportedNamespace *NamespaceReport, podList *k8sapicore.Pod
 	}
 }
 
-// ReportRoutes create report about routes
-func ReportRoutes(reportedNamespace *NamespaceReport, routeList *o7tapiroute.RouteList) {
-	for _, route := range routeList.Items {
-		reportedRoute := RouteReport{
-			Name:              route.Name,
-			AlternateBackends: route.Spec.AlternateBackends,
-			Host:              route.Spec.Host,
-			Path:              route.Spec.Path,
-			To:                route.Spec.To,
-			TLS:               route.Spec.TLS,
-			WildcardPolicy:    route.Spec.WildcardPolicy,
-		}
-
-		reportedNamespace.Routes = append(reportedNamespace.Routes, reportedRoute)
-	}
-}
-
 // ReportPVCs generate PVC report
 func ReportPVCs(reporeportedNamespace *NamespaceReport, pvcList *k8scorev1.PersistentVolumeClaimList, pvList []PVReport) {
 	for _, pvc := range pvcList.Items {
@@ -384,13 +274,13 @@ func ReportPVCs(reporeportedNamespace *NamespaceReport, pvcList *k8scorev1.Persi
 
 // ReportNewGVs reports GroupVersion present in target but in source cluster
 func (clusterReport *Report) ReportNewGVs(list []string) {
-	logrus.Info("ClusterReport::ReportNewGVs")
+	logrus.Info("ClusterReport::ReportNewGroupVersions")
 	for _, groupVersion := range list {
-		reportedNewGVs := NewGVsReport{
+		reportedNewGroupVersions := NewGroupVersionsReport{
 			GroupVersion: groupVersion,
 		}
 
-		clusterReport.NewGVs = append(clusterReport.NewGVs, reportedNewGVs)
+		clusterReport.NewGroupVersions = append(clusterReport.NewGroupVersions, reportedNewGroupVersions)
 	}
 }
 

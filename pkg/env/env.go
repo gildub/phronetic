@@ -283,7 +283,7 @@ func createClients() error {
 	dstMigCluster := api.GetMigCluster(api.CtrlClient, dstCluster)
 
 	if srcMigCluster.Spec.IsHostCluster {
-		if err := api.CreateK8sClient(migClusterName); err != nil {
+		if err := api.CreateK8sSrcClient(migClusterName); err != nil {
 			return errors.Wrap(err, "Source Cluster: k8s api client failed to create")
 		}
 	} else {
@@ -292,11 +292,8 @@ func createClients() error {
 		srcContext := api.ClusterNames[srcClusterEndpoint]
 		// set current context to selected cluster
 		api.KubeConfig.CurrentContext = srcContext
-		if err := api.CreateK8sClient(srcClusterEndpoint); err != nil {
+		if err := api.CreateK8sSrcClient(srcClusterEndpoint); err != nil {
 			return errors.Wrap(err, "Source Cluster: k8s api client failed to create")
-		}
-		if err := api.CreateO7tClient(srcClusterEndpoint); err != nil {
-			return errors.Wrap(err, "Source Cluster: OpenShift api client failed to create")
 		}
 	}
 

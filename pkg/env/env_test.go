@@ -23,8 +23,7 @@ func TestInitConfig(t *testing.T) {
 	os.Setenv("PHRONETIC_TARGETCLUSTERNAME", "")
 
 	ConfigFile = "testdata/cpma-config.yml"
-	api.K8sClient = &kubernetes.Clientset{}
-	api.O7tClient = &api.OpenshiftClient{}
+	api.K8sSrcClient = &kubernetes.Clientset{}
 	if err := InitConfig(); err != nil {
 		t.Fatal(err)
 	}
@@ -130,8 +129,7 @@ func TestInitFromEnv(t *testing.T) {
 			os.Setenv("PHRONETIC_NODECONFIGFILE", "/etc/origin/node/node-config.yaml")
 			os.Setenv("PHRONETIC_REGISTRIESCONFIGFILE", "/etc/containers/registries.conf")
 
-			api.K8sClient = &kubernetes.Clientset{}
-			api.O7tClient = &api.OpenshiftClient{}
+			api.K8sSrcClient = &kubernetes.Clientset{}
 			for _, asset := range tc.sourceConfig {
 				err = os.Setenv(asset.envKey, asset.envValue)
 				assert.NoError(t, err, "Unable to export %s=%s", asset.envKey, asset.envValue)

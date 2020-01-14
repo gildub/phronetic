@@ -27,16 +27,10 @@ var (
 	ClusterNames = make(map[string]string)
 	// CtrlClient k8s controller client for migration cluster
 	CtrlClient client.Client
-
-	// K8sClient k8s api client for source cluster
-	K8sClient *kubernetes.Clientset
+	// K8sSrcClient k8s api client for source cluster
+	K8sSrcClient *kubernetes.Clientset
 	// K8sDstClient k8s api client for target cluster
 	K8sDstClient *kubernetes.Clientset
-
-	// O7tClient openshift api client for source cluster
-	O7tClient *OpenshiftClient
-	// O7tDstClient openshift api client for source cluster
-	O7tDstClient *OpenshiftClient
 
 	kubeConfigGetter = func() (*clientcmdapi.Config, error) {
 		return KubeConfig, nil
@@ -85,7 +79,7 @@ func getKubeConfigPath() (string, error) {
 	return kubeConfigPath, nil
 }
 
-// CreateCtrlClient create k8s Controller client using cluster from kubeconfig context
+// CreateCtrlClient creates a k8s runtime-controller client for given context
 func CreateCtrlClient(contextCluster string) error {
 	if CtrlClient == nil {
 		config, err := buildConfig(contextCluster)
@@ -116,31 +110,16 @@ func CreateK8sDstClient(contextCluster string) error {
 	return nil
 }
 
-// CreateK8sClient create api client using cluster from kubeconfig context
-func CreateK8sClient(contextCluster string) error {
-	if K8sClient == nil {
+// CreateK8sSrcClient create api client using cluster from kubeconfig context
+func CreateK8sSrcClient(contextCluster string) error {
+	if K8sSrcClient == nil {
 		config, err := buildConfig(contextCluster)
 		if err != nil {
 			return err
 		}
 
-		K8sClient = NewK8SOrDie(config)
+		K8sSrcClient = NewK8SOrDie(config)
 		logrus.Debugf("Kubernetes API client initialized for %s", contextCluster)
-	}
-
-	return nil
-}
-
-// CreateO7tClient create api client using cluster from kubeconfig context
-func CreateO7tClient(contextCluster string) error {
-	if O7tClient == nil {
-		config, err := buildConfig(contextCluster)
-		if err != nil {
-			return err
-		}
-
-		O7tClient = NewO7tOrDie(config)
-		logrus.Debugf("Openshift API client initialized for %s", contextCluster)
 	}
 
 	return nil
