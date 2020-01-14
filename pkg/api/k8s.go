@@ -15,11 +15,11 @@ func NewK8SOrDie(config *rest.Config) *kubernetes.Clientset {
 }
 
 // NewCtrlClientorDie gets a controller client or die
-func NewCtrlClientorDie(config *rest.Config, options client.Options) *client.Client {
+func NewCtrlClientorDie(config *rest.Config, options client.Options) client.Client {
 	ctrlClient, error := client.New(config, options)
 	if error != nil {
 		log.Fatal("Can't create runtime-controller client")
 	}
 
-	return &ctrlClient
+	return ctrlClient
 }
