@@ -5,6 +5,7 @@
 *.swo
 *.swp
 **/testdata/out/*
+phronetic
 
 # Standard and 3rd party lib ignored - use go tool to regenerate
 /src/*.*/

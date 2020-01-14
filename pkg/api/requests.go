@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+
 	migv1alpha1 "github.com/fusor/mig-controller/pkg/apis/migration/v1alpha1"
 	o7tauthv1 "github.com/openshift/api/authorization/v1"
 	o7tquotav1 "github.com/openshift/api/quota/v1"
@@ -15,6 +17,7 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,13 +60,31 @@ type NamespaceResources struct {
 
 var listOptions metav1.ListOptions
 
-// ListMigClusters list all MigrationClusters
-func ListMigClusters(client *ctrlclient.Client) []migv1alpha1.MigCluster {
-	migClusters, err := migv1alpha1.ListClusters(*client)
+// GetMigPlan get MigrationPlan
+func GetMigPlan(client ctrlclient.Client, name string) (migv1alpha1.MigPlan, error) {
+	objectKey := types.NamespacedName{
+		Namespace: "openshift-migration",
+		Name:      name,
+	}
+
+	migPlan := migv1alpha1.MigPlan{}
+	err := client.Get(context.TODO(), objectKey, &migPlan)
+	return migPlan, err
+}
+
+// GetMigCluster get MigrationCluster
+func GetMigCluster(client ctrlclient.Client, name string) migv1alpha1.MigCluster {
+	objectKey := types.NamespacedName{
+		Namespace: "openshift-migration",
+		Name:      name,
+	}
+
+	migCluster := migv1alpha1.MigCluster{}
+	err := client.Get(context.TODO(), objectKey, &migCluster)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	return migClusters
+	return migCluster
 }
 
 // ListGroupVersions list all GV

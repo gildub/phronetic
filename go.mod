@@ -12,7 +12,7 @@ require (
 	github.com/appscode/jsonpatch v1.0.1
 	github.com/aws/aws-sdk-go v1.26.7 // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
-	github.com/fusor/mig-controller v0.0.0-20191218145217-2f4560fef553
+	github.com/fusor/mig-controller v0.0.0-20200110183843-9570fb194469
 	github.com/ghodss/yaml v0.0.0-20180820084758-c7ce16629ff4
 	github.com/go-logr/logr v0.1.0 // indirect
 	github.com/go-logr/zapr v0.1.1 // indirect
@@ -20,6 +20,7 @@ require (
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
+	github.com/heptio/velero v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.9 // indirect

@@ -123,32 +123,57 @@ func surveyMissingValues() error {
 	}
 
 	migClusterName := viperConfig.GetString("MigrationCluster")
-	// set current context to selected cluster client
+	// set current context to selected cluster
 	api.KubeConfig.CurrentContext = api.ClusterNames[migClusterName]
-
 	if err := api.CreateCtrlClient(migClusterName); err != nil {
 		return errors.Wrap(err, "k8s controller client failed to create")
 	}
 
-	migClustersList := api.ListMigClusters(api.CtrlClient)
+	migPlan, err := api.GetMigPlan(api.CtrlClient, viperConfig.GetString("MigPlan"))
 
-	for _, cluster := range migClustersList {
-		if cluster.Spec.IsHostCluster {
-			if err := api.CreateK8sDstClient(migClusterName); err != nil {
-				return errors.Wrap(err, "k8s api client failed to create")
-			}
-		} else {
-			res2 := strings.Trim(cluster.Spec.URL, "https://")
-			otherCluster := strings.ReplaceAll(res2, ".", "-")
-			newContext := api.ClusterNames[otherCluster]
-			// set current context to selected cluster client
-			api.KubeConfig.CurrentContext = newContext
-			if err := api.CreateK8sClient(otherCluster); err != nil {
-				return errors.Wrap(err, "k8s api client failed to create")
-			}
-			if err := api.CreateO7tClient(otherCluster); err != nil {
-				return errors.Wrap(err, "OpenShift api client failed to create")
-			}
+	if err != nil {
+		logrus.Fatal("No MigPlan avail.")
+	}
+
+	dstCluster := migPlan.Spec.DestMigClusterRef.Name
+	srcCluster := migPlan.Spec.SrcMigClusterRef.Name
+
+	srcMigCluster := api.GetMigCluster(api.CtrlClient, srcCluster)
+	dstMigCluster := api.GetMigCluster(api.CtrlClient, dstCluster)
+
+	if srcMigCluster.Spec.IsHostCluster {
+		if err := api.CreateK8sClient(migClusterName); err != nil {
+			return errors.Wrap(err, "Source Cluster: k8s api client failed to create")
+		}
+	} else {
+		noScheme := strings.Trim(srcMigCluster.Spec.URL, "https://")
+		srcClusterEndpoint := strings.ReplaceAll(noScheme, ".", "-")
+		srcContext := api.ClusterNames[srcClusterEndpoint]
+		// set current context to selected cluster
+		api.KubeConfig.CurrentContext = srcContext
+		if err := api.CreateK8sClient(srcClusterEndpoint); err != nil {
+			return errors.Wrap(err, "Source Cluster: k8s api client failed to create")
+		}
+		if err := api.CreateO7tClient(srcClusterEndpoint); err != nil {
+			return errors.Wrap(err, "Source Cluster: OpenShift api client failed to create")
+		}
+	}
+
+	if dstMigCluster.Spec.IsHostCluster {
+		// set current context to selected cluster
+		dstContext := api.ClusterNames[migClusterName]
+		api.KubeConfig.CurrentContext = dstContext
+		if err := api.CreateK8sDstClient(migClusterName); err != nil {
+			return errors.Wrap(err, "Destination Cluster: k8s api client failed to create")
+		}
+	} else {
+		noScheme := strings.Trim(dstMigCluster.Spec.URL, "https://")
+		dstClusterEndpoint := strings.ReplaceAll(noScheme, ".", "-")
+		dstContext := api.ClusterNames[dstClusterEndpoint]
+		// set current context to selected cluster
+		api.KubeConfig.CurrentContext = dstContext
+		if err := api.CreateK8sDstClient(dstClusterEndpoint); err != nil {
+			return errors.Wrap(err, "Destination Cluster: k8s api client failed to create")
 		}
 	}
 

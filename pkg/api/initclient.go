@@ -26,13 +26,17 @@ var (
 	// ClusterNames contains names of contexts and cluster
 	ClusterNames = make(map[string]string)
 	// CtrlClient k8s controller client for migration cluster
-	CtrlClient *client.Client
+	CtrlClient client.Client
+
 	// K8sClient k8s api client for source cluster
 	K8sClient *kubernetes.Clientset
 	// K8sDstClient k8s api client for target cluster
 	K8sDstClient *kubernetes.Clientset
+
 	// O7tClient openshift api client for source cluster
 	O7tClient *OpenshiftClient
+	// O7tDstClient openshift api client for source cluster
+	O7tDstClient *OpenshiftClient
 
 	kubeConfigGetter = func() (*clientcmdapi.Config, error) {
 		return KubeConfig, nil
