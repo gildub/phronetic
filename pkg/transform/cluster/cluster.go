@@ -16,11 +16,12 @@ import (
 
 // Report represents json report of k8s resources
 type Report struct {
-	Nodes            []NodeReport             `json:"nodes"`
-	Namespace        NamespaceReport          `json:"namespace,omitempty"`
-	PVs              []PVReport               `json:"pvs,omitempty"`
-	StorageClasses   []StorageClassReport     `json:"storageClasses,omitempty"`
-	NewGroupVersions []NewGroupVersionsReport `json:"newGroupVersions,omitempty"`
+	Nodes            []NodeReport          `json:"nodes"`
+	Namespace        NamespaceReport       `json:"namespace,omitempty"`
+	PVs              []PVReport            `json:"pvs,omitempty"`
+	StorageClasses   []StorageClassReport  `json:"storageClasses,omitempty"`
+	OldGroupVersions []GroupVersionsReport `json:"oldGroupVersions,omitempty"`
+	NewGroupVersions []GroupVersionsReport `json:"newGroupVersions,omitempty"`
 }
 
 // NodeReport represents json report of k8s nodes
@@ -99,8 +100,8 @@ type StorageClassReport struct {
 	Provisioner string `json:"provisioner"`
 }
 
-// NewGroupVersionsReport represents json report of k8s storage classes
-type NewGroupVersionsReport struct {
+// GroupVersionsReport represents json report of k8s storage classes
+type GroupVersionsReport struct {
 	GroupVersion string `json:"groupversion"`
 }
 
@@ -117,6 +118,7 @@ type PVСReport struct {
 // GenClusterReport inserts report values into structures for json output
 func GenClusterReport(apiResources api.Resources) (clusterReport Report) {
 	clusterReport.ReportNamespaceResources(apiResources.NamespaceResources)
+	clusterReport.ReportOldGVs(apiResources.OldGroupVersions)
 	clusterReport.ReportNewGVs(apiResources.NewGroupVersions)
 	return
 }
@@ -272,15 +274,27 @@ func ReportPVCs(reporeportedNamespace *NamespaceReport, pvcList *k8scorev1.Persi
 	}
 }
 
-// ReportNewGVs reports GroupVersion present in target but in source cluster
-func (clusterReport *Report) ReportNewGVs(list []string) {
-	logrus.Info("ClusterReport::ReportNewGroupVersions")
+// ReportOldGVs reports GroupVersion present in source but in destination cluster
+func (clusterReport *Report) ReportOldGVs(list []string) {
+	logrus.Info("ClusterReport::ReportOldGroupVersions")
 	for _, groupVersion := range list {
-		reportedNewGroupVersions := NewGroupVersionsReport{
+		reportedGroupVersions := GroupVersionsReport{
 			GroupVersion: groupVersion,
 		}
 
-		clusterReport.NewGroupVersions = append(clusterReport.NewGroupVersions, reportedNewGroupVersions)
+		clusterReport.OldGroupVersions = append(clusterReport.OldGroupVersions, reportedGroupVersions)
+	}
+}
+
+// ReportNewGVs reports GroupVersion present in destination but in source cluster
+func (clusterReport *Report) ReportNewGVs(list []string) {
+	logrus.Info("ClusterReport::ReportNewGroupVersions")
+	for _, groupVersion := range list {
+		reportedGroupVersions := GroupVersionsReport{
+			GroupVersion: groupVersion,
+		}
+
+		clusterReport.NewGroupVersions = append(clusterReport.NewGroupVersions, reportedGroupVersions)
 	}
 }
 

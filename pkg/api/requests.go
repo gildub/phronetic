@@ -26,6 +26,7 @@ type Resources struct {
 	NodeList             *corev1.NodeList
 	PersistentVolumeList *corev1.PersistentVolumeList
 	StorageClassList     *storagev1.StorageClassList
+	OldGroupVersions     []string
 	NewGroupVersions     []string
 	NamespaceResources   *NamespaceResources
 }

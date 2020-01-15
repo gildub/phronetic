@@ -30,6 +30,7 @@ func (e ClusterExtraction) Transform() ([]Output, error) {
 
 	clusterReport := cluster.GenClusterReport(api.Resources{
 		NamespaceResources: e.NamespaceResources,
+		OldGroupVersions:   e.OldGroupVersions,
 		NewGroupVersions:   e.NewGroupVersions,
 	})
 
@@ -58,7 +59,8 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 		extraction.NamespaceResources = &namespaceResources
 		extraction.SrcGroupVersions = api.ListGroupVersions(api.K8sSrcClient)
 		extraction.DstGroupVersions = api.ListGroupVersions(api.K8sDstClient)
-		extraction.NewGroupVersions = NewGroupVersions(extraction.DstGroupVersions, extraction.DstGroupVersions)
+		extraction.OldGroupVersions = DiffGroupVersions(extraction.SrcGroupVersions, extraction.DstGroupVersions)
+		extraction.NewGroupVersions = DiffGroupVersions(extraction.DstGroupVersions, extraction.SrcGroupVersions)
 
 		return *extraction, nil
 	}
@@ -66,21 +68,24 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 	return nil, errors.New("Cluster Transform failed: Migration controller missing")
 }
 
-// NewGroupVersions returns the list of new GroupVersions available in destination but in source
-func NewGroupVersions(src *metav1.APIGroupList, dst *metav1.APIGroupList) []string {
+// DiffGroupVersions returns the list of APIGroupList available in source list but in destination
+func DiffGroupVersions(src *metav1.APIGroupList, dst *metav1.APIGroupList) []string {
 	list := []string{}
-	for _, dstGV := range filterGVs(dst) {
-		found := false
-		for _, srcGV := range filterGVs(src) {
-			if dstGV == srcGV {
-				found = true
-			}
-		}
-		if found == false {
-			list = append(list, dstGV)
+	for _, srcGV := range filterGVs(src) {
+		if !exists(srcGV, filterGVs(dst)) {
+			list = append(list, srcGV)
 		}
 	}
 	return list
+}
+
+func exists(str string, list []string) bool {
+	for _, ch := range list {
+		if ch == str {
+			return true
+		}
+	}
+	return false
 }
 
 // Name returns a human readable name for the transform
