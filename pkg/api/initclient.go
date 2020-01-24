@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -23,6 +24,10 @@ import (
 var (
 	// KubeConfig represents kubeconfig
 	KubeConfig *clientcmdapi.Config
+	// SrcRESTMapper is Source REST Mapper
+	SrcRESTMapper meta.RESTMapper
+	// DstRESTMapper is destination REST Mapper
+	DstRESTMapper meta.RESTMapper
 	// ClusterNames contains names of contexts and cluster
 	ClusterNames = make(map[string]string)
 	// CtrlClient k8s controller client for migration cluster

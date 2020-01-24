@@ -2,13 +2,19 @@ package transform
 
 import (
 	"errors"
+	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/gildub/phronetic/pkg/api"
 	"github.com/gildub/phronetic/pkg/env"
 	"github.com/gildub/phronetic/pkg/transform/cluster"
 	"github.com/sirupsen/logrus"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
 )
 
 // ClusterTransformName is the cluster report name
@@ -46,6 +52,28 @@ func (e ClusterExtraction) Validate() (err error) { return }
 func (e ClusterTransform) Extract() (Extraction, error) {
 	if api.CtrlClient != nil {
 		extraction := &ClusterExtraction{}
+
+		api.SrcRESTMapper = api.RESTMapperGetGRs(api.K8sSrcClient)
+		api.DstRESTMapper = api.RESTMapperGetGRs(api.K8sDstClient)
+
+		srcMap := mapResources(api.K8sSrcClient, api.SrcRESTMapper)
+
+		fmt.Println("Src:")
+		for r, gv := range srcMap {
+			fmt.Printf("%s => %+v\n", r, gv)
+		}
+
+		fmt.Println("Dst:")
+		dstMap := mapResources(api.K8sDstClient, api.DstRESTMapper)
+		for r, gv := range dstMap {
+			fmt.Printf("%s => %+v\n", r, gv)
+		}
+
+		extraction.SrcGroupVersions = api.ListGroupVersions(api.K8sSrcClient)
+		extraction.DstGroupVersions = api.ListGroupVersions(api.K8sDstClient)
+		extraction.OldGroupVersions = DiffGroupVersions(extraction.SrcGroupVersions, extraction.DstGroupVersions)
+		extraction.NewGroupVersions = DiffGroupVersions(extraction.DstGroupVersions, extraction.SrcGroupVersions)
+
 		namespace := env.Config().GetString("Namespace")
 		namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
 
@@ -55,17 +83,41 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 		namespaceResources.DeploymentList = api.ListDeployments(api.K8sSrcClient, namespaceResource.Name)
 		namespaceResources.DaemonSetList = api.ListDaemonSets(api.K8sSrcClient, namespaceResource.Name)
 		namespaceResources.PVCList = api.ListPVCs(api.K8sSrcClient, namespaceResource.Name)
+		namespaceResources.HPAList = api.ListHPAv1(api.K8sSrcClient, namespaceResource.Name)
 
 		extraction.NamespaceResources = &namespaceResources
-		extraction.SrcGroupVersions = api.ListGroupVersions(api.K8sSrcClient)
-		extraction.DstGroupVersions = api.ListGroupVersions(api.K8sDstClient)
-		extraction.OldGroupVersions = DiffGroupVersions(extraction.SrcGroupVersions, extraction.DstGroupVersions)
-		extraction.NewGroupVersions = DiffGroupVersions(extraction.DstGroupVersions, extraction.SrcGroupVersions)
 
 		return *extraction, nil
 	}
 
 	return nil, errors.New("Cluster Transform failed: Migration controller missing")
+}
+
+func mapResources(client *kubernetes.Clientset, restMapper meta.RESTMapper) map[string][]schema.GroupVersionKind {
+	resources := api.ListServerResources(client)
+	list := make(map[string][]schema.GroupVersionKind)
+	for _, resource := range resources {
+		for _, APIResource := range resource.APIResources {
+			if APIResource.Namespaced {
+				name := APIResource.Name
+				last := strings.LastIndex(APIResource.Name, "/")
+				if last != -1 {
+					name = APIResource.Name[0:last]
+				}
+				if _, ok := list[name]; !ok {
+					list[name] = api.GetKindsFor(restMapper, name)
+				}
+			}
+		}
+	}
+	return list
+}
+
+// TODO: Cleanup
+// srcAutoscalingLatestVersion := getLatestVersion(getVersionsByGroup("autoscaling/", extraction.SrcGroupVersions))
+func getLatestVersion(versions []string) string {
+	sort.Strings(versions)
+	return versions[len(versions)-1]
 }
 
 // DiffGroupVersions returns the list of APIGroupList available in source list but in destination
