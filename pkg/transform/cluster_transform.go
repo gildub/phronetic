@@ -3,7 +3,6 @@ package transform
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/gildub/phronetic/pkg/api"
@@ -36,8 +35,6 @@ func (e ClusterExtraction) Transform() ([]Output, error) {
 
 	clusterReport := cluster.GenClusterReport(api.Resources{
 		NamespaceResources: e.NamespaceResources,
-		OldGroupVersions:   e.OldGroupVersions,
-		NewGroupVersions:   e.NewGroupVersions,
 	})
 
 	FinalReportOutput.Report.ClusterReport = clusterReport
@@ -56,23 +53,20 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 		api.SrcRESTMapper = api.RESTMapperGetGRs(api.K8sSrcClient)
 		api.DstRESTMapper = api.RESTMapperGetGRs(api.K8sDstClient)
 
-		srcMap := mapResources(api.K8sSrcClient, api.SrcRESTMapper)
+		srcMap := namespacedResources(api.K8sSrcClient, api.SrcRESTMapper)
+		dstMap := namespacedResources(api.K8sDstClient, api.DstRESTMapper)
 
-		fmt.Println("Src:")
-		for r, gv := range srcMap {
-			fmt.Printf("%s => %+v\n", r, gv)
+		for srcRes, srcGVs := range srcMap {
+			if dstGVs, ok := dstMap[srcRes]; ok {
+				if !sameGVKs(srcGVs, dstGVs) {
+					if !leastCommonGVKs(srcGVs, dstGVs) {
+						fmt.Printf("NO COMMON VERSION: %q\n  < %+v\n  > %+v\n", srcRes, srcGVs, dstGVs)
+					}
+				}
+			} else {
+				fmt.Printf("NO DESTINATION GROUP: %q => %+v\n", srcRes, srcGVs)
+			}
 		}
-
-		fmt.Println("Dst:")
-		dstMap := mapResources(api.K8sDstClient, api.DstRESTMapper)
-		for r, gv := range dstMap {
-			fmt.Printf("%s => %+v\n", r, gv)
-		}
-
-		extraction.SrcGroupVersions = api.ListGroupVersions(api.K8sSrcClient)
-		extraction.DstGroupVersions = api.ListGroupVersions(api.K8sDstClient)
-		extraction.OldGroupVersions = DiffGroupVersions(extraction.SrcGroupVersions, extraction.DstGroupVersions)
-		extraction.NewGroupVersions = DiffGroupVersions(extraction.DstGroupVersions, extraction.SrcGroupVersions)
 
 		namespace := env.Config().GetString("Namespace")
 		namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
@@ -93,7 +87,36 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 	return nil, errors.New("Cluster Transform failed: Migration controller missing")
 }
 
-func mapResources(client *kubernetes.Clientset, restMapper meta.RESTMapper) map[string][]schema.GroupVersionKind {
+func leastCommonGVKs(src, dst []schema.GroupVersionKind) bool {
+	for _, s := range src {
+		for _, d := range dst {
+			if s == d {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func sameGVKs(src, dst []schema.GroupVersionKind) bool {
+	if len(src) != len(dst) {
+		return false
+	}
+	for _, s := range src {
+		found := false
+		for _, d := range dst {
+			if s == d {
+				found = true
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+func namespacedResources(client *kubernetes.Clientset, restMapper meta.RESTMapper) map[string][]schema.GroupVersionKind {
 	resources := api.ListServerResources(client)
 	list := make(map[string][]schema.GroupVersionKind)
 	for _, resource := range resources {
@@ -111,33 +134,6 @@ func mapResources(client *kubernetes.Clientset, restMapper meta.RESTMapper) map[
 		}
 	}
 	return list
-}
-
-// TODO: Cleanup
-// srcAutoscalingLatestVersion := getLatestVersion(getVersionsByGroup("autoscaling/", extraction.SrcGroupVersions))
-func getLatestVersion(versions []string) string {
-	sort.Strings(versions)
-	return versions[len(versions)-1]
-}
-
-// DiffGroupVersions returns the list of APIGroupList available in source list but in destination
-func DiffGroupVersions(src *metav1.APIGroupList, dst *metav1.APIGroupList) []string {
-	list := []string{}
-	for _, srcGV := range filterGVs(src) {
-		if !exists(srcGV, filterGVs(dst)) {
-			list = append(list, srcGV)
-		}
-	}
-	return list
-}
-
-func exists(str string, list []string) bool {
-	for _, ch := range list {
-		if ch == str {
-			return true
-		}
-	}
-	return false
 }
 
 // Name returns a human readable name for the transform

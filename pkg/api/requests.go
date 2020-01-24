@@ -25,8 +25,6 @@ import (
 
 // Resources represent api resources used in report
 type Resources struct {
-	SrcGroupVersions     *metav1.APIGroupList
-	DstGroupVersions     *metav1.APIGroupList
 	NodeList             *corev1.NodeList
 	PersistentVolumeList *corev1.PersistentVolumeList
 	StorageClassList     *storagev1.StorageClassList
@@ -61,7 +59,6 @@ func RESTMapperGetGRs(client *kubernetes.Clientset) meta.RESTMapper {
 // GetKindsFor lists all GVKs for a resource
 func GetKindsFor(restMapper meta.RESTMapper, resource string) []schema.GroupVersionKind {
 	gvr := schema.GroupVersionResource{Group: "", Version: "", Resource: resource}
-
 	gvks, err := restMapper.KindsFor(gvr)
 	if err != nil {
 		logrus.Fatal(err)
