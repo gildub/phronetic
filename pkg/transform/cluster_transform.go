@@ -60,11 +60,11 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 			if dstGVs, ok := dstMap[srcRes]; ok {
 				if !sameGVKs(srcGVs, dstGVs) {
 					if !leastCommonGVKs(srcGVs, dstGVs) {
-						fmt.Printf("NO COMMON VERSION: %q\n  < %+v\n  > %+v\n", srcRes, srcGVs, dstGVs)
+						fmt.Printf("CAN'T PORT: %q -> Source: %+v, Destination: %+v\n", srcRes, srcGVs, dstGVs)
 					}
 				}
 			} else {
-				fmt.Printf("NO DESTINATION GROUP: %q => %+v\n", srcRes, srcGVs)
+				fmt.Printf("SRC ONLY: %q => %+v\n", srcRes, srcGVs)
 			}
 		}
 

@@ -1,6 +1,7 @@
 package env
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -105,11 +106,11 @@ func surveyMissingValues() error {
 		return err
 	}
 
-	if err := surveyNamespace(); err != nil {
+	if err := surveyMigPlan(); err != nil {
 		return err
 	}
 
-	if err := surveyMigPlan(); err != nil {
+	if err := surveyNamespace(); err != nil {
 		return err
 	}
 
@@ -289,10 +290,14 @@ func createClients() error {
 	} else {
 		noScheme := strings.Trim(srcMigCluster.Spec.URL, "https://")
 		srcClusterEndpoint := strings.ReplaceAll(noScheme, ".", "-")
-		srcContext := api.ClusterNames[srcClusterEndpoint]
+		srcContext, err := getContext(srcClusterEndpoint)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
 		// set current context to selected cluster
 		api.KubeConfig.CurrentContext = srcContext
-		if err := api.CreateK8sSrcClient(srcClusterEndpoint); err != nil {
+		if err := api.CreateK8sSrcClient(srcContext); err != nil {
 			return errors.Wrap(err, "Source Cluster: k8s api client failed to create")
 		}
 	}
@@ -307,14 +312,30 @@ func createClients() error {
 	} else {
 		noScheme := strings.Trim(dstMigCluster.Spec.URL, "https://")
 		dstClusterEndpoint := strings.ReplaceAll(noScheme, ".", "-")
-		dstContext := api.ClusterNames[dstClusterEndpoint]
+		dstContext, err := getContext(dstClusterEndpoint)
+		if err != nil {
+			logrus.Fatal(err)
+		}
 		// set current context to selected cluster
 		api.KubeConfig.CurrentContext = dstContext
-		if err := api.CreateK8sDstClient(dstClusterEndpoint); err != nil {
+		if err := api.CreateK8sDstClient(dstContext); err != nil {
 			return errors.Wrap(err, "Destination Cluster: k8s api client failed to create")
 		}
 	}
 	return nil
+}
+
+func getContext(clusterEndpoint string) (string, error) {
+	context := api.ClusterNames[clusterEndpoint]
+	if context == "" {
+		for _, e := range api.ClusterNames {
+			if strings.Contains(e, clusterEndpoint) {
+				return e, nil
+			}
+		}
+		return "", errors.New(fmt.Sprintf("Can't find cluster %s in Kubeconfig", clusterEndpoint))
+	}
+	return context, nil
 }
 
 // InitLogger initializes stderr and logger to file

@@ -131,11 +131,6 @@ func CreateK8sSrcClient(contextCluster string) error {
 }
 
 func buildConfig(contextCluster string) (*rest.Config, error) {
-	// Check if context is present in kubeconfig
-	if err := validateConfig(contextCluster); err != nil {
-		return nil, err
-	}
-
 	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", kubeConfigGetter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error in KUBECONFIG")
@@ -148,14 +143,4 @@ func buildConfig(contextCluster string) (*rest.Config, error) {
 	)
 
 	return config, nil
-}
-
-func validateConfig(contextCluster string) error {
-	for context := range ClusterNames {
-		if context == contextCluster {
-			return nil
-		}
-	}
-
-	return errors.New("Not valid context")
 }
