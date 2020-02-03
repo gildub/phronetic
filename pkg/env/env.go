@@ -300,6 +300,10 @@ func createClients() error {
 		if err := api.CreateK8sSrcClient(srcContext); err != nil {
 			return errors.Wrap(err, "Source Cluster: k8s api client failed to create")
 		}
+
+		if err := api.CreateK8sSrcDynClient(srcContext); err != nil {
+			return errors.Wrap(err, "Source Cluster: k8s api Dynamic client failed to create")
+		}
 	}
 
 	if dstMigCluster.Spec.IsHostCluster {

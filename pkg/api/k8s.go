@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -22,4 +23,9 @@ func NewCtrlClientorDie(config *rest.Config, options client.Options) client.Clie
 	}
 
 	return ctrlClient
+}
+
+// NewK8SDynClientOrDie init k8s client or panic
+func NewK8SDynClientOrDie(config *rest.Config) dynamic.Interface {
+	return dynamic.NewForConfigOrDie(config)
 }

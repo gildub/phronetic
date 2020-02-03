@@ -13,6 +13,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -34,6 +35,8 @@ var (
 	CtrlClient client.Client
 	// K8sSrcClient k8s api client for source cluster
 	K8sSrcClient *kubernetes.Clientset
+	// K8sSrcDynClient k8s api client for source cluster
+	K8sSrcDynClient dynamic.Interface
 	// K8sDstClient k8s api client for target cluster
 	K8sDstClient *kubernetes.Clientset
 
@@ -125,6 +128,21 @@ func CreateK8sSrcClient(contextCluster string) error {
 
 		K8sSrcClient = NewK8SOrDie(config)
 		logrus.Debugf("Kubernetes API client initialized for %s", contextCluster)
+	}
+
+	return nil
+}
+
+// CreateK8sSrcDynClient create api client using cluster from kubeconfig context
+func CreateK8sSrcDynClient(contextCluster string) error {
+	if K8sSrcDynClient == nil {
+		config, err := buildConfig(contextCluster)
+		if err != nil {
+			return err
+		}
+
+		K8sSrcDynClient = NewK8SDynClientOrDie(config)
+		logrus.Debugf("Kubernetes API dynamic client initialized for %s", contextCluster)
 	}
 
 	return nil

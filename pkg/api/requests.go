@@ -25,23 +25,13 @@ import (
 
 // Resources represent api resources used in report
 type Resources struct {
-	NodeList             *corev1.NodeList
-	PersistentVolumeList *corev1.PersistentVolumeList
-	StorageClassList     *storagev1.StorageClassList
-	OldGroupVersions     []string
-	NewGroupVersions     []string
-	NamespaceResources   *NamespaceResources
+	NewGroupVersions   []string
+	NamespaceResources *NamespaceResources
 }
 
 // NamespaceResources holds all resources that belong to a namespace
 type NamespaceResources struct {
-	Namespace         *corev1.Namespace
-	DaemonSetList     *extv1beta1.DaemonSetList
-	DeploymentList    *v1beta1.DeploymentList
-	PodList           *corev1.PodList
-	ResourceQuotaList *corev1.ResourceQuotaList
-	PVCList           *corev1.PersistentVolumeClaimList
-	HPAList           *autoscalingv1.HorizontalPodAutoscalerList
+	Namespace *corev1.Namespace
 }
 
 var listOptions metav1.ListOptions

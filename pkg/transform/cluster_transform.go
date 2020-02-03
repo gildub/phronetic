@@ -2,7 +2,6 @@ package transform
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/gildub/phronetic/pkg/api"
@@ -59,12 +58,27 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 		for srcRes, srcGVs := range srcMap {
 			if dstGVs, ok := dstMap[srcRes]; ok {
 				if !sameGVKs(srcGVs, dstGVs) {
-					if !leastCommonGVKs(srcGVs, dstGVs) {
-						fmt.Printf("CAN'T PORT: %q -> Source: %+v, Destination: %+v\n", srcRes, srcGVs, dstGVs)
+					if !commonGVKs(srcGVs, dstGVs) {
+						curGVR := schema.GroupVersionResource{
+							Group:    srcMap[srcRes][0].Group,
+							Version:  srcMap[srcRes][0].Version,
+							Resource: srcRes,
+						}
+						crdClient := api.K8sSrcDynClient.Resource(curGVR)
+
+						crd, err := crdClient.List(metav1.ListOptions{})
+						if err != nil {
+							logrus.Fatalf("Error getting CRD %v", err)
+						}
+
+						if crd != nil {
+
+							logrus.Warningf("Source resource %q is incompatible for destination: Source: %+v, Destination: %+v\n", srcRes, srcGVs, dstGVs)
+						}
 					}
 				}
 			} else {
-				fmt.Printf("SRC ONLY: %q => %+v\n", srcRes, srcGVs)
+				logrus.Warningf("Source only resource %q => %+v\n", srcRes, srcGVs)
 			}
 		}
 
@@ -72,13 +86,6 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 		namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
 
 		namespaceResources := api.NamespaceResources{Namespace: namespaceResource}
-		namespaceResources.ResourceQuotaList = api.ListResourceQuotas(api.K8sSrcClient, namespaceResource.Name)
-		namespaceResources.PodList = api.ListPods(api.K8sSrcClient, namespaceResource.Name)
-		namespaceResources.DeploymentList = api.ListDeployments(api.K8sSrcClient, namespaceResource.Name)
-		namespaceResources.DaemonSetList = api.ListDaemonSets(api.K8sSrcClient, namespaceResource.Name)
-		namespaceResources.PVCList = api.ListPVCs(api.K8sSrcClient, namespaceResource.Name)
-		namespaceResources.HPAList = api.ListHPAv1(api.K8sSrcClient, namespaceResource.Name)
-
 		extraction.NamespaceResources = &namespaceResources
 
 		return *extraction, nil
@@ -87,7 +94,7 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 	return nil, errors.New("Cluster Transform failed: Migration controller missing")
 }
 
-func leastCommonGVKs(src, dst []schema.GroupVersionKind) bool {
+func commonGVKs(src, dst []schema.GroupVersionKind) bool {
 	for _, s := range src {
 		for _, d := range dst {
 			if s == d {
@@ -139,14 +146,4 @@ func namespacedResources(client *kubernetes.Clientset, restMapper meta.RESTMappe
 // Name returns a human readable name for the transform
 func (e ClusterTransform) Name() string {
 	return ClusterTransformName
-}
-
-func filterGVs(gvs *metav1.APIGroupList) []string {
-	list := []string{}
-	for _, group := range gvs.Groups {
-		for _, version := range group.Versions {
-			list = append(list, version.GroupVersion)
-		}
-	}
-	return list
 }
