@@ -48,42 +48,46 @@ func (e ClusterExtraction) Validate() (err error) { return }
 func (e ClusterTransform) Extract() (Extraction, error) {
 	if api.CtrlClient != nil {
 		extraction := &ClusterExtraction{}
+		extraction.SourceOnlyGVKs = []schema.GroupVersionKind{}
+		extraction.GapGVKs = []schema.GroupVersionKind{}
+
+		namespace := env.Config().GetString("Namespace")
+		namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
 
 		api.SrcRESTMapper = api.RESTMapperGetGRs(api.K8sSrcClient)
 		api.DstRESTMapper = api.RESTMapperGetGRs(api.K8sDstClient)
 
-		srcMap := namespacedResources(api.K8sSrcClient, api.SrcRESTMapper)
-		dstMap := namespacedResources(api.K8sDstClient, api.DstRESTMapper)
+		srcMap := listNamespacedResources(api.K8sSrcClient, api.SrcRESTMapper)
+		dstMap := listNamespacedResources(api.K8sDstClient, api.DstRESTMapper)
 
-		for srcRes, srcGVs := range srcMap {
-			if dstGVs, ok := dstMap[srcRes]; ok {
-				if !sameGVKs(srcGVs, dstGVs) {
-					if !commonGVKs(srcGVs, dstGVs) {
-						curGVR := schema.GroupVersionResource{
-							Group:    srcMap[srcRes][0].Group,
-							Version:  srcMap[srcRes][0].Version,
-							Resource: srcRes,
-						}
-						crdClient := api.K8sSrcDynClient.Resource(curGVR)
+		for srcRes, srcGroupGVKs := range srcMap {
+			for srcGroup, srcGVs := range srcGroupGVKs {
+				if dstGVs, ok := dstMap[srcRes][srcGroup]; ok {
+					if !sameGVKs(srcGVs, dstGVs) {
+						if !commonGVKs(srcGVs, dstGVs) {
+							curGVR := schema.GroupVersionResource{
+								Group: srcGroup,
+								// TODO: Replace with Preferred Version
+								Version:  srcMap[srcRes][srcGroup][0].Version,
+								Resource: srcRes,
+							}
+							crdClient := api.K8sSrcDynClient.Resource(curGVR)
 
-						crd, err := crdClient.List(metav1.ListOptions{})
-						if err != nil {
-							logrus.Fatalf("Error getting CRD %v", err)
-						}
+							crd, err := crdClient.List(metav1.ListOptions{})
+							if err != nil {
+								logrus.Fatalf("Error getting CRD %v", err)
+							}
 
-						if crd != nil {
-
-							logrus.Warningf("Source resource %q is incompatible for destination: Source: %+v, Destination: %+v\n", srcRes, srcGVs, dstGVs)
+							if crd != nil {
+								logrus.Warningf("Source resource %q is incompatible for destination: Source: %+v, Destination: %+v\n", srcRes, srcGVs, dstGVs)
+							}
 						}
 					}
+				} else {
+					logrus.Warningf("Source only resource %q => %+v\n", srcRes, srcGVs)
 				}
-			} else {
-				logrus.Warningf("Source only resource %q => %+v\n", srcRes, srcGVs)
 			}
 		}
-
-		namespace := env.Config().GetString("Namespace")
-		namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
 
 		namespaceResources := api.NamespaceResources{Namespace: namespaceResource}
 		extraction.NamespaceResources = &namespaceResources
@@ -123,9 +127,58 @@ func sameGVKs(src, dst []schema.GroupVersionKind) bool {
 	return true
 }
 
-func namespacedResources(client *kubernetes.Clientset, restMapper meta.RESTMapper) map[string][]schema.GroupVersionKind {
+// listNamespacedResources parses provided list of RESTMapper.APIGroupRessources
+// then filters resources that are only namespaced
+// and trims out resources with suffixes extensions (such as */status, */rollback, */scale etc. I.E deployments/status)
+// and finaly returns GroupVersionKinds broken down by group for each resource.
+// for example:
+/*
+[
+	"cronjobs": [
+		"batch": [
+			{
+				Group: "batch",
+				Version: "v2alpha1",
+				Kind: "CronJob",
+			},
+		],
+	],
+	"localsubjectaccessreviews": [
+		"authorization.k8s.io": [
+			{
+				Group: "authorization.k8s.io",
+				Version: "v1",
+				Kind: "LocalSubjectAccessReview",
+			},
+			{
+				Group: "authorization.k8s.io",
+				Version: "v1beta1",
+				Kind: "LocalSubjectAccessReview",
+			},
+		],
+		"authorization.openshift.io": [
+			{
+				Group: "authorization.openshift.io",
+				Version: "v1",
+				Kind: "LocalSubjectAccessReview",
+			},
+		],
+	],
+	"scheduledjobs": [
+		"batch": [
+			{
+				Group: "batch",
+				Version: "v2alpha1",
+				Kind: "ScheduledJob",
+			},
+		],
+	],
+]
+*/
+func listNamespacedResources(client *kubernetes.Clientset, restMapper meta.RESTMapper) map[string]map[string][]schema.GroupVersionKind {
+	//map[string][]schema.GroupVersionKind {
 	resources := api.ListServerResources(client)
-	list := make(map[string][]schema.GroupVersionKind)
+	list := make(map[string]map[string][]schema.GroupVersionKind)
 	for _, resource := range resources {
 		for _, APIResource := range resource.APIResources {
 			if APIResource.Namespaced {
@@ -134,10 +187,29 @@ func namespacedResources(client *kubernetes.Clientset, restMapper meta.RESTMappe
 				if last != -1 {
 					name = APIResource.Name[0:last]
 				}
+
 				if _, ok := list[name]; !ok {
-					list[name] = api.GetKindsFor(restMapper, name)
+					list[name] = map[string][]schema.GroupVersionKind{}
+					gvks := api.GetKindsFor(restMapper, name)
+
+					for _, gvk := range gvks {
+						// TODO: Handle the case of empty group which corresponds to legacy "core"
+						if gvk.Group != "" {
+							list[name][gvk.Group] = getGVsFrom(gvks, gvk.Group)
+						}
+					}
 				}
 			}
+		}
+	}
+	return list
+}
+
+func getGVsFrom(GVs []schema.GroupVersionKind, group string) []schema.GroupVersionKind {
+	list := []schema.GroupVersionKind{}
+	for _, GV := range GVs {
+		if GV.Group == group {
+			list = append(list, GV)
 		}
 	}
 	return list

@@ -25,8 +25,9 @@ import (
 
 // Resources represent api resources used in report
 type Resources struct {
-	NewGroupVersions   []string
 	NamespaceResources *NamespaceResources
+	GapGVKs            []schema.GroupVersionKind
+	SourceOnlyGVKs     []schema.GroupVersionKind
 }
 
 // NamespaceResources holds all resources that belong to a namespace
@@ -55,6 +56,11 @@ func GetKindsFor(restMapper meta.RESTMapper, resource string) []schema.GroupVers
 	}
 	return gvks
 }
+
+// ServerResourcesForGroupVersion returns the supported resources for a group and version.
+//func (d *DiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (resources *metav1.APIResourceList, err error) {}
+
+func ListSrvResForGV(gv string) {}
 
 // ListGroupVersions list all GV
 func ListGroupVersions(client *kubernetes.Clientset) *metav1.APIGroupList {
