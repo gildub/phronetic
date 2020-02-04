@@ -34,6 +34,9 @@ func (e ClusterExtraction) Transform() ([]Output, error) {
 
 	clusterReport := cluster.GenClusterReport(api.Resources{
 		NamespaceResources: e.NamespaceResources,
+		SrcOnlyGVKs:        e.SrcOnlyGVKs,
+		SrcGapGVKs:         e.SrcGapGVKs,
+		DstGapGVKs:         e.DstGapGVKs,
 	})
 
 	FinalReportOutput.Report.ClusterReport = clusterReport
@@ -48,11 +51,14 @@ func (e ClusterExtraction) Validate() (err error) { return }
 func (e ClusterTransform) Extract() (Extraction, error) {
 	if api.CtrlClient != nil {
 		extraction := &ClusterExtraction{}
-		extraction.SourceOnlyGVKs = []schema.GroupVersionKind{}
-		extraction.GapGVKs = []schema.GroupVersionKind{}
+		extraction.SrcOnlyGVKs = map[string]map[string][]schema.GroupVersionKind{}
+		extraction.SrcGapGVKs = map[string]map[string][]schema.GroupVersionKind{}
+		extraction.DstGapGVKs = map[string]map[string][]schema.GroupVersionKind{}
 
 		namespace := env.Config().GetString("Namespace")
 		namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
+		namespaceResources := api.NamespaceResources{Namespace: namespaceResource}
+		extraction.NamespaceResources = &namespaceResources
 
 		api.SrcRESTMapper = api.RESTMapperGetGRs(api.K8sSrcClient)
 		api.DstRESTMapper = api.RESTMapperGetGRs(api.K8sDstClient)
@@ -79,18 +85,19 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 							}
 
 							if crd != nil {
-								logrus.Warningf("Source resource %q is incompatible for destination: Source: %+v, Destination: %+v\n", srcRes, srcGVs, dstGVs)
+								extraction.SrcGapGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
+								extraction.SrcGapGVKs[srcRes][srcGroup] = srcGVs
+								extraction.DstGapGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
+								extraction.DstGapGVKs[srcRes][srcGroup] = dstGVs
 							}
 						}
 					}
 				} else {
-					logrus.Warningf("Source only resource %q => %+v\n", srcRes, srcGVs)
+					extraction.SrcOnlyGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
+					extraction.SrcOnlyGVKs[srcRes][srcGroup] = srcGVs
 				}
 			}
 		}
-
-		namespaceResources := api.NamespaceResources{Namespace: namespaceResource}
-		extraction.NamespaceResources = &namespaceResources
 
 		return *extraction, nil
 	}

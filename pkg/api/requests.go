@@ -26,8 +26,9 @@ import (
 // Resources represent api resources used in report
 type Resources struct {
 	NamespaceResources *NamespaceResources
-	GapGVKs            []schema.GroupVersionKind
-	SourceOnlyGVKs     []schema.GroupVersionKind
+	SrcOnlyGVKs        map[string]map[string][]schema.GroupVersionKind
+	SrcGapGVKs         map[string]map[string][]schema.GroupVersionKind
+	DstGapGVKs         map[string]map[string][]schema.GroupVersionKind
 }
 
 // NamespaceResources holds all resources that belong to a namespace
