@@ -1,7 +1,6 @@
 package transform
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/gildub/phronetic/pkg/api"
@@ -27,19 +26,18 @@ type ClusterExtraction struct {
 type ClusterTransform struct {
 }
 
-// Transform converts data collected from an OCP3 API into a useful output
+// Transform converts the retrieved information to a useful output
 func (e ClusterExtraction) Transform() ([]Output, error) {
 	outputs := []Output{}
 	logrus.Info("ClusterTransform::Transform:Reports")
 
-	clusterReport := cluster.GenClusterReport(api.Resources{
-		NamespaceResources: e.NamespaceResources,
-		SrcOnlyGVKs:        e.SrcOnlyGVKs,
-		SrcGapGVKs:         e.SrcGapGVKs,
-		DstGapGVKs:         e.DstGapGVKs,
-	})
+	srcClusterReport := cluster.GenSrcClusterReport(e.Resources)
+	FinalReportOutput.Report.SrcClusterReport = srcClusterReport
 
-	FinalReportOutput.Report.ClusterReport = clusterReport
+	if api.CtrlClient == nil {
+		dstClusterReport := cluster.GenDstClusterReport(e.Resources)
+		FinalReportOutput.Report.DstClusterReport = dstClusterReport
+	}
 
 	return outputs, nil
 }
@@ -49,60 +47,62 @@ func (e ClusterExtraction) Validate() (err error) { return }
 
 // Extract collects data for cluster report
 func (e ClusterTransform) Extract() (Extraction, error) {
-	if api.CtrlClient != nil {
-		extraction := &ClusterExtraction{}
-		extraction.SrcOnlyGVKs = map[string]map[string][]schema.GroupVersionKind{}
-		extraction.SrcGapGVKs = map[string]map[string][]schema.GroupVersionKind{}
-		extraction.DstGapGVKs = map[string]map[string][]schema.GroupVersionKind{}
+	extraction := &ClusterExtraction{}
 
-		namespace := env.Config().GetString("Namespace")
-		namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
-		namespaceResources := api.NamespaceResources{Namespace: namespaceResource}
-		extraction.NamespaceResources = &namespaceResources
+	extraction.SrcOnlyRGVKs = map[string]map[string][]schema.GroupVersionKind{}
+	extraction.SrcGapRGVKs = map[string]map[string][]schema.GroupVersionKind{}
+	extraction.DstGapRGVKs = map[string]map[string][]schema.GroupVersionKind{}
 
-		api.SrcRESTMapper = api.RESTMapperGetGRs(api.K8sSrcClient)
-		api.DstRESTMapper = api.RESTMapperGetGRs(api.K8sDstClient)
+	api.SrcRESTMapper = api.RESTMapperGetGRs(api.K8sSrcClient)
+	api.DstRESTMapper = api.RESTMapperGetGRs(api.K8sDstClient)
 
-		srcMap := listNamespacedResources(api.K8sSrcClient, api.SrcRESTMapper)
-		dstMap := listNamespacedResources(api.K8sDstClient, api.DstRESTMapper)
+	extraction.SrcRGVKs = listNamespacedResources(api.K8sSrcClient, api.SrcRESTMapper)
+	extraction.DstRGVKs = listNamespacedResources(api.K8sDstClient, api.DstRESTMapper)
 
-		for srcRes, srcGroupGVKs := range srcMap {
-			for srcGroup, srcGVs := range srcGroupGVKs {
-				if dstGVs, ok := dstMap[srcRes][srcGroup]; ok {
-					if !sameGVKs(srcGVs, dstGVs) {
-						if !commonGVKs(srcGVs, dstGVs) {
-							curGVR := schema.GroupVersionResource{
-								Group: srcGroup,
-								// TODO: Replace with Preferred Version
-								Version:  srcMap[srcRes][srcGroup][0].Version,
-								Resource: srcRes,
-							}
-							crdClient := api.K8sSrcDynClient.Resource(curGVR)
+	namespace := env.Config().GetString("Namespace")
+	namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
+	namespaceResources := api.NamespaceResources{Namespace: namespaceResource}
+	extraction.NamespaceResources = &namespaceResources
 
-							crd, err := crdClient.List(metav1.ListOptions{})
-							if err != nil {
-								logrus.Fatalf("Error getting CRD %v", err)
-							}
+	for srcRes, srcGroupGVKs := range extraction.SrcRGVKs {
+		for srcGroup, srcGVs := range srcGroupGVKs {
+			if dstGVs, ok := extraction.DstRGVKs[srcRes][srcGroup]; ok {
+				if !sameGVKs(srcGVs, dstGVs) {
+					if !commonGVKs(srcGVs, dstGVs) {
+						if api.CtrlClient != nil {
+						}
+						curGVR := schema.GroupVersionResource{
+							Group: srcGroup,
+							// TODO: Replace with Preferred Version
+							Version:  extraction.SrcRGVKs[srcRes][srcGroup][0].Version,
+							Resource: srcRes,
+						}
+						crdClient := api.K8sSrcDynClient.Resource(curGVR)
 
-							if crd != nil {
-								extraction.SrcGapGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
-								extraction.SrcGapGVKs[srcRes][srcGroup] = srcGVs
-								extraction.DstGapGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
-								extraction.DstGapGVKs[srcRes][srcGroup] = dstGVs
-							}
+						crd, err := crdClient.List(metav1.ListOptions{})
+						if err != nil {
+							logrus.Fatalf("Error getting CRD %v", err)
+						}
+
+						if crd != nil {
+							extraction.SrcGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
+							extraction.SrcGapRGVKs[srcRes][srcGroup] = srcGVs
+							extraction.DstGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
+							extraction.DstGapRGVKs[srcRes][srcGroup] = dstGVs
 						}
 					}
-				} else {
-					extraction.SrcOnlyGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
-					extraction.SrcOnlyGVKs[srcRes][srcGroup] = srcGVs
 				}
+			} else {
+				extraction.SrcOnlyRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
+				extraction.SrcOnlyRGVKs[srcRes][srcGroup] = srcGVs
 			}
 		}
-
-		return *extraction, nil
 	}
 
-	return nil, errors.New("Cluster Transform failed: Migration controller missing")
+	return *extraction, nil
+
+	// TODO: exception rule?
+	// return nil, errors.New("Cluster Transform failed: Migration controller missing")
 }
 
 func commonGVKs(src, dst []schema.GroupVersionKind) bool {
@@ -138,50 +138,6 @@ func sameGVKs(src, dst []schema.GroupVersionKind) bool {
 // then filters resources that are only namespaced
 // and trims out resources with suffixes extensions (such as */status, */rollback, */scale etc. I.E deployments/status)
 // and finaly returns GroupVersionKinds broken down by group for each resource.
-// for example:
-/*
-[
-	"cronjobs": [
-		"batch": [
-			{
-				Group: "batch",
-				Version: "v2alpha1",
-				Kind: "CronJob",
-			},
-		],
-	],
-	"localsubjectaccessreviews": [
-		"authorization.k8s.io": [
-			{
-				Group: "authorization.k8s.io",
-				Version: "v1",
-				Kind: "LocalSubjectAccessReview",
-			},
-			{
-				Group: "authorization.k8s.io",
-				Version: "v1beta1",
-				Kind: "LocalSubjectAccessReview",
-			},
-		],
-		"authorization.openshift.io": [
-			{
-				Group: "authorization.openshift.io",
-				Version: "v1",
-				Kind: "LocalSubjectAccessReview",
-			},
-		],
-	],
-	"scheduledjobs": [
-		"batch": [
-			{
-				Group: "batch",
-				Version: "v2alpha1",
-				Kind: "ScheduledJob",
-			},
-		],
-	],
-]
-*/
 func listNamespacedResources(client *kubernetes.Clientset, restMapper meta.RESTMapper) map[string]map[string][]schema.GroupVersionKind {
 	//map[string][]schema.GroupVersionKind {
 	resources := api.ListServerResources(client)

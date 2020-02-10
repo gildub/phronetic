@@ -23,19 +23,6 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Resources represent api resources used in report
-type Resources struct {
-	NamespaceResources *NamespaceResources
-	SrcOnlyGVKs        map[string]map[string][]schema.GroupVersionKind
-	SrcGapGVKs         map[string]map[string][]schema.GroupVersionKind
-	DstGapGVKs         map[string]map[string][]schema.GroupVersionKind
-}
-
-// NamespaceResources holds all resources that belong to a namespace
-type NamespaceResources struct {
-	Namespace *corev1.Namespace
-}
-
 var listOptions metav1.ListOptions
 var getOptions metav1.GetOptions
 
@@ -58,9 +45,9 @@ func GetKindsFor(restMapper meta.RESTMapper, resource string) []schema.GroupVers
 	return gvks
 }
 
-// ServerResourcesForGroupVersion returns the supported resources for a group and version.
+// ListSrvResForGV returns the supported resources for a group and version.
 //func (d *DiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (resources *metav1.APIResourceList, err error) {}
-
+// TODO: Is there a better way to break down exhaustive list of Resource/GVKs?
 func ListSrvResForGV(gv string) {}
 
 // ListGroupVersions list all GV

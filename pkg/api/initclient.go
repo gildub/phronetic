@@ -23,6 +23,11 @@ import (
 )
 
 var (
+	// DstClusterName holds Kubeconfig name of source cluster
+	DstClusterName string
+	// SrcClusterName holds Kubeconfig name of source cluster
+	SrcClusterName string
+	// KubeConfig represents kubeconfig
 	// KubeConfig represents kubeconfig
 	KubeConfig *clientcmdapi.Config
 	// SrcRESTMapper is Source REST Mapper
