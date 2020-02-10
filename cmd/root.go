@@ -42,9 +42,21 @@ func init() {
 	rootCmd.PersistentFlags().StringP("namespace", "n", "", "Namespace")
 	env.Config().BindPFlag("Namespace", rootCmd.PersistentFlags().Lookup("namespace"))
 
+	// Flag for Differiential mode - Running by default in CAM mode
+	rootCmd.PersistentFlags().StringP("mode", "m", "", "Execution mode: source/destination differential or CAM Operator")
+	env.Config().BindPFlag("Mode", rootCmd.PersistentFlags().Lookup("mode"))
+
 	// MigPlan to search for
-	rootCmd.PersistentFlags().StringP("migplan", "m", "", "MigPlan")
+	rootCmd.PersistentFlags().StringP("migplan", "p", "", "MigPlan")
 	env.Config().BindPFlag("MigPlan", rootCmd.PersistentFlags().Lookup("migplan"))
+
+	// Source cluster name for Kubeconfig context
+	rootCmd.PersistentFlags().StringP("source-cluster", "o", "", "Source cluster")
+	env.Config().BindPFlag("SourceCluster", rootCmd.PersistentFlags().Lookup("source-cluster"))
+
+	// Destination cluster name for Kubeconfig context
+	rootCmd.PersistentFlags().StringP("destination-cluster", "t", "", "Destination cluster")
+	env.Config().BindPFlag("DestinationCluster", rootCmd.PersistentFlags().Lookup("destination-cluster"))
 
 	// Don't output logs to console if true
 	rootCmd.PersistentFlags().BoolP("silent", "s", false, "silent mode, disable logging output to console")

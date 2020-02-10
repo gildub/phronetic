@@ -4,46 +4,60 @@ import (
 	"github.com/gildub/phronetic/pkg/api"
 	"github.com/sirupsen/logrus"
 
-	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// Report represents json report of k8s resources
-type Report struct {
-	ClusterName string
-	Namespace   NamespaceReport                                 `json:"namespace,omitempty"`
+// ReportMigOperator represents json report of CAM Operator results
+type ReportMigOperator struct {
+	ClusterName string                                          `json:"clusterName,omitempty"`
+	Namespace   string                                          `json:"namespace,omitempty"`
+	OnlyGVKs    map[string]map[string][]schema.GroupVersionKind `json:"onlyGroupVersionKinds,omitempty"`
+	GapGVKs     map[string]map[string][]schema.GroupVersionKind `json:"gapGroupVersionKinds,omitempty"`
+}
+
+// ReportDiff represents json report of Cluster Differential report
+type ReportDiff struct {
+	ReportSrcCluster ReportCluster `json:"sourceCluster,omitempty"`
+	ReportDstCluster ReportCluster `json:"destinationCluster,omitempty"`
+}
+
+// ReportCluster represents json report of Cluster Differential report
+type ReportCluster struct {
+	ClusterName string                                          `json:"clusterName,omitempty"`
 	GVRs        map[string]map[string][]schema.GroupVersionKind `json:"resourcesGroupVersionKinds,omitempty"`
 	OnlyGVKs    map[string]map[string][]schema.GroupVersionKind `json:"onlyGroupVersionKinds,omitempty"`
 	GapGVKs     map[string]map[string][]schema.GroupVersionKind `json:"gapGroupVersionKinds,omitempty"`
 }
 
-// NamespaceReport represents json report of k8s namespaces
-type NamespaceReport struct {
-	Name         string       `json:"name"`
-	LatestChange k8sMeta.Time `json:"latestChange,omitempty"`
+// GenDiffReport inserts report values for Source Cluster for json output
+func GenDiffReport(apiResources api.Resources) (clusterReport ReportDiff) {
+	logrus.Info("ClusterReport::Report:Differential")
+	clusterReport.ReportSrcCluster = GenSrcClusterReport(apiResources)
+	clusterReport.ReportDstCluster = GenDstClusterReport(apiResources)
+	return
 }
 
-// ReportNamespaceResources fills in information about resources of a namespace
-func (clusterReport *Report) ReportNamespaceResources(apiResources *api.NamespaceResources) {
-	logrus.Info("ClusterReport::ReportNamespaceResources")
-
-	reportedNamespace := NamespaceReport{Name: apiResources.Namespace.Name}
-	clusterReport.Namespace = reportedNamespace
+// GenMigOperatorReport inserts report values for Source Cluster for json output
+func GenMigOperatorReport(apiResources api.Resources) (clusterReport ReportMigOperator) {
+	logrus.Info("ClusterReport::Report:MigOperator")
+	clusterReport.ClusterName = api.SrcClusterName
+	clusterReport.Namespace = apiResources.NamespaceResources.Namespace.Name
+	clusterReport.GapGVKs = apiResources.SrcGapRGVKs
+	clusterReport.OnlyGVKs = apiResources.SrcOnlyRGVKs
+	return
 }
 
 // GenSrcClusterReport inserts report values for Source Cluster for json output
-func GenSrcClusterReport(apiResources api.Resources) (clusterReport Report) {
+func GenSrcClusterReport(apiResources api.Resources) (clusterReport ReportCluster) {
 	clusterReport.ClusterName = api.SrcClusterName
 	clusterReport.OnlyGVKs = apiResources.SrcOnlyRGVKs
 	clusterReport.GapGVKs = apiResources.SrcGapRGVKs
-	if api.CtrlClient != nil {
-		clusterReport.GVRs = apiResources.SrcRGVKs
-	}
+	clusterReport.GVRs = apiResources.SrcRGVKs
 	return
 }
 
 // GenDstClusterReport inserts report values for Destination Cluster for json output
-func GenDstClusterReport(apiResources api.Resources) (clusterReport Report) {
+func GenDstClusterReport(apiResources api.Resources) (clusterReport ReportCluster) {
 	clusterReport.ClusterName = api.DstClusterName
 	//clusterReport.DstOnlyGVKs = apiResources.DstOnlyGVKs
 	clusterReport.GapGVKs = apiResources.DstGapRGVKs

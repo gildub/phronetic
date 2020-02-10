@@ -31,12 +31,12 @@ func (e ClusterExtraction) Transform() ([]Output, error) {
 	outputs := []Output{}
 	logrus.Info("ClusterTransform::Transform:Reports")
 
-	srcClusterReport := cluster.GenSrcClusterReport(e.Resources)
-	FinalReportOutput.Report.SrcClusterReport = srcClusterReport
-
-	if api.CtrlClient == nil {
-		dstClusterReport := cluster.GenDstClusterReport(e.Resources)
-		FinalReportOutput.Report.DstClusterReport = dstClusterReport
+	if env.Config().GetString("Mode") == "Differential" {
+		diffReport := cluster.GenDiffReport(e.Resources)
+		FinalReportOutput.Report.DiffReport = diffReport
+	} else {
+		migOperatorReport := cluster.GenMigOperatorReport(e.Resources)
+		FinalReportOutput.Report.MigOperatorReport = migOperatorReport
 	}
 
 	return outputs, nil
@@ -67,24 +67,29 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 	for srcRes, srcGroupGVKs := range extraction.SrcRGVKs {
 		for srcGroup, srcGVs := range srcGroupGVKs {
 			if dstGVs, ok := extraction.DstRGVKs[srcRes][srcGroup]; ok {
-				if !sameGVKs(srcGVs, dstGVs) {
-					if !commonGVKs(srcGVs, dstGVs) {
-						if api.CtrlClient != nil {
-						}
-						curGVR := schema.GroupVersionResource{
-							Group: srcGroup,
-							// TODO: Replace with Preferred Version
-							Version:  extraction.SrcRGVKs[srcRes][srcGroup][0].Version,
-							Resource: srcRes,
-						}
-						crdClient := api.K8sSrcDynClient.Resource(curGVR)
+				if !hasSameGVKs(srcGVs, dstGVs) {
+					if !hasCommonGVKs(srcGVs, dstGVs) {
+						if env.Config().GetString("Mode") == "CAM Operator" {
+							curGVR := schema.GroupVersionResource{
+								Group: srcGroup,
+								// TODO: Replace with Preferred Version
+								Version:  extraction.SrcRGVKs[srcRes][srcGroup][0].Version,
+								Resource: srcRes,
+							}
+							crdClient := api.K8sSrcDynClient.Resource(curGVR)
 
-						crd, err := crdClient.List(metav1.ListOptions{})
-						if err != nil {
-							logrus.Fatalf("Error getting CRD %v", err)
-						}
+							crd, err := crdClient.List(metav1.ListOptions{})
+							if err != nil {
+								logrus.Fatalf("Error getting CRD %v", err)
+							}
 
-						if crd != nil {
+							if crd != nil {
+								extraction.SrcGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
+								extraction.SrcGapRGVKs[srcRes][srcGroup] = srcGVs
+								extraction.DstGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
+								extraction.DstGapRGVKs[srcRes][srcGroup] = dstGVs
+							}
+						} else {
 							extraction.SrcGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
 							extraction.SrcGapRGVKs[srcRes][srcGroup] = srcGVs
 							extraction.DstGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
@@ -105,7 +110,7 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 	// return nil, errors.New("Cluster Transform failed: Migration controller missing")
 }
 
-func commonGVKs(src, dst []schema.GroupVersionKind) bool {
+func hasCommonGVKs(src, dst []schema.GroupVersionKind) bool {
 	for _, s := range src {
 		for _, d := range dst {
 			if s == d {
@@ -116,7 +121,7 @@ func commonGVKs(src, dst []schema.GroupVersionKind) bool {
 	return false
 }
 
-func sameGVKs(src, dst []schema.GroupVersionKind) bool {
+func hasSameGVKs(src, dst []schema.GroupVersionKind) bool {
 	if len(src) != len(dst) {
 		return false
 	}

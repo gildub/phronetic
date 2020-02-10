@@ -6,8 +6,8 @@ import (
 
 // ReportOutput holds a collection of reports to be written to file
 type ReportOutput struct {
-	SrcClusterReport cluster.Report `json:"sourceCluster,omitempty"`
-	DstClusterReport cluster.Report `json:"destinationCluster,omitempty"`
+	MigOperatorReport cluster.ReportMigOperator `json:"migOperator,omitempty"`
+	DiffReport        cluster.ReportDiff        `json:"differential,omitempty"`
 }
 
 var (

@@ -120,6 +120,7 @@ func CreateK8sDstClient(contextCluster string) error {
 		logrus.Debugf("Kubernetes API client initialized for %s", contextCluster)
 	}
 
+	DstClusterName = contextCluster
 	return nil
 }
 
@@ -135,6 +136,7 @@ func CreateK8sSrcClient(contextCluster string) error {
 		logrus.Debugf("Kubernetes API client initialized for %s", contextCluster)
 	}
 
+	SrcClusterName = contextCluster
 	return nil
 }
 

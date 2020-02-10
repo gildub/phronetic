@@ -102,16 +102,19 @@ func surveyMissingValues() error {
 		return err
 	}
 
-	if err := surveyMigCluster(); err != nil {
+	// Ask for operation mode
+	if err := surveyMode(); err != nil {
 		return err
 	}
 
-	if err := surveyMigPlan(); err != nil {
-		return err
-	}
-
-	if err := surveyNamespace(); err != nil {
-		return err
+	if viperConfig.GetString("Mode") == "Differential" {
+		if err := surveyDiffMode(); err != nil {
+			return err
+		}
+	} else {
+		if err := surveyCAMMode(); err != nil {
+			return err
+		}
 	}
 
 	if viperConfig.GetString("WorkDir") == "" {
@@ -130,6 +133,38 @@ func surveyMissingValues() error {
 	return nil
 }
 
+func surveyMode() error {
+	mode := viperConfig.GetString("Mode")
+	if !viperConfig.InConfig("mode") && mode == "" {
+		prompt := &survey.Select{
+			Message: "Operational mode: Differential betweeen 2 clusters or CAM Operator mode)?",
+			Options: []string{"CAM Operator", "Differential"},
+		}
+		if err := survey.AskOne(prompt, &mode); err != nil {
+			return err
+		}
+		viperConfig.Set("Mode", mode)
+	}
+
+	return nil
+}
+
+func surveyCAMMode() error {
+	if err := surveyMigCluster(); err != nil {
+		return err
+	}
+
+	if err := surveyMigPlan(); err != nil {
+		return err
+	}
+
+	if err := surveyNamespace(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func surveyMigCluster() error {
 	migClusterName := viperConfig.GetString("MigrationCluster")
 	if !viperConfig.InConfig("MigrationCluster") && migClusterName == "" {
@@ -139,7 +174,7 @@ func surveyMigCluster() error {
 
 		// Ask for source of master hostname, prompt or find it using KUBECONFIG
 		prompt := &survey.Select{
-			Message: "Do wish to find source cluster using KUBECONFIG or prompt it?",
+			Message: "Find CAM Operator cluster using KUBECONFIG or prompt it?",
 			Options: []string{"KUBECONFIG", "prompt"},
 		}
 		if err := survey.AskOne(prompt, &discoverCluster); err != nil {
@@ -195,6 +230,104 @@ func surveyMigPlan() error {
 	}
 	return nil
 
+}
+
+func surveyDiffMode() error {
+	if err := surveySaveConfig(); err != nil {
+		return err
+	}
+
+	if err := surveySrcCluster(); err != nil {
+		return err
+	}
+
+	if err := surveyDstCluster(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func surveySrcCluster() error {
+	srcClusterName := viperConfig.GetString("SourceCluster")
+	if !viperConfig.InConfig("SourceCluster") && srcClusterName == "" {
+		sourceCluster := ""
+		clusterName := ""
+		var err error
+
+		// Ask for source of master hostname, prompt or find it using KUBECONFIG
+		prompt := &survey.Select{
+			Message: "Diff mode: Do wish to find source cluster using KUBECONFIG or prompt it?",
+			Options: []string{"KUBECONFIG", "prompt"},
+		}
+		if err := survey.AskOne(prompt, &sourceCluster); err != nil {
+			return err
+		}
+
+		if sourceCluster == "KUBECONFIG" {
+			if clusterName, err = findCluster(); err != nil {
+				return err
+			}
+			viperConfig.Set("SourceCluster", clusterName)
+		} else {
+			prompt := &survey.Input{
+				Message: "Cluster name",
+			}
+			if err := survey.AskOne(prompt, &clusterName); err != nil {
+				return err
+			}
+
+			viperConfig.Set("SourceCluster", clusterName)
+		}
+	}
+
+	return nil
+}
+
+func surveyDstCluster() error {
+	dstClusterName := viperConfig.GetString("DestinationCluster")
+	if !viperConfig.InConfig("DestinationCluster") && dstClusterName == "" {
+		destinationCluster := ""
+		clusterName := ""
+		var err error
+
+		// Ask for source of master hostname, prompt or find it using KUBECONFIG
+		prompt := &survey.Select{
+			Message: "Diff mode: Do wish to find destination cluster using KUBECONFIG or prompt it?",
+			Options: []string{"KUBECONFIG", "prompt"},
+		}
+		if err := survey.AskOne(prompt, &destinationCluster); err != nil {
+			return err
+		}
+
+		if destinationCluster == "KUBECONFIG" {
+			if clusterName, err = findCluster(); err != nil {
+				return err
+			}
+			viperConfig.Set("DestinationCluster", clusterName)
+		} else {
+			prompt := &survey.Input{
+				Message: "Cluster name",
+			}
+			if err := survey.AskOne(prompt, &clusterName); err != nil {
+				return err
+			}
+
+			viperConfig.Set("DestinationCluster", clusterName)
+		}
+	}
+
+	return nil
+}
+
+// findCluster Get kubeconfig using $KUBECONFIG, if not try ~/.kube/config
+// parse kubeconfig and select targeted cluster from available contexts
+func findCluster() (string, error) {
+	selectedCluster := surveyClusters()
+	if selectedCluster == "" {
+		return "", nil
+	}
+	return selectedCluster, nil
 }
 
 // discoverMigCluster Get kubeconfig using $KUBECONFIG, if not try ~/.kube/config
