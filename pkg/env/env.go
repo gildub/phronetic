@@ -112,7 +112,7 @@ func surveyMissingValues() error {
 			return err
 		}
 	} else {
-		if err := surveyCAMMode(); err != nil {
+		if err := surveyMigMode(); err != nil {
 			return err
 		}
 	}
@@ -137,8 +137,8 @@ func surveyMode() error {
 	mode := viperConfig.GetString("Mode")
 	if !viperConfig.InConfig("mode") && mode == "" {
 		prompt := &survey.Select{
-			Message: "Operational mode: Differential betweeen 2 clusters or CAM Operator mode)?",
-			Options: []string{"CAM Operator", "Differential"},
+			Message: "Operational mode: Differential betweeen 2 clusters or Migration mode (CAM Operator)?",
+			Options: []string{"Migration", "Differential"},
 		}
 		if err := survey.AskOne(prompt, &mode); err != nil {
 			return err
@@ -149,16 +149,12 @@ func surveyMode() error {
 	return nil
 }
 
-func surveyCAMMode() error {
+func surveyMigMode() error {
 	if err := surveyMigCluster(); err != nil {
 		return err
 	}
 
 	if err := surveyMigPlan(); err != nil {
-		return err
-	}
-
-	if err := surveyNamespace(); err != nil {
 		return err
 	}
 
@@ -174,7 +170,7 @@ func surveyMigCluster() error {
 
 		// Ask for source of master hostname, prompt or find it using KUBECONFIG
 		prompt := &survey.Select{
-			Message: "Find CAM Operator cluster using KUBECONFIG or prompt it?",
+			Message: "Find Migration Operator cluster (CAM) using KUBECONFIG or prompt it?",
 			Options: []string{"KUBECONFIG", "prompt"},
 		}
 		if err := survey.AskOne(prompt, &discoverCluster); err != nil {
@@ -198,21 +194,6 @@ func surveyMigCluster() error {
 		}
 	}
 
-	return nil
-}
-
-func surveyNamespace() error {
-	// Ask namespace to run analysis for
-	namespace := ""
-	if viperConfig.GetString("Namespace") == "" {
-		prompt := &survey.Input{
-			Message: "What namespace to inspect?",
-		}
-		if err := survey.AskOne(prompt, &namespace); err != nil {
-			return err
-		}
-		viperConfig.Set("Namespace", &namespace)
-	}
 	return nil
 }
 
@@ -397,6 +378,32 @@ func handleInterrupt(err error) error {
 }
 
 func createClients() error {
+	if Config().GetString("Mode") == "Differential" {
+		return createDiffModeClients()
+	} else {
+		return createMigModeClients()
+	}
+}
+
+func createDiffModeClients() error {
+	srcClusterName := viperConfig.GetString("SourceCluster")
+	// set current context to selected cluster
+	api.KubeConfig.CurrentContext = api.ClusterNames[srcClusterName]
+	if err := api.CreateK8sSrcClient(srcClusterName); err != nil {
+		return errors.Wrap(err, "Source Cluster: k8s api client failed to create")
+	}
+
+	dstClusterName := viperConfig.GetString("DestinationCluster")
+	// set current context to selected cluster
+	api.KubeConfig.CurrentContext = api.ClusterNames[dstClusterName]
+	if err := api.CreateK8sDstClient(dstClusterName); err != nil {
+		return errors.Wrap(err, "Destination Cluster: k8s api client failed to create")
+	}
+
+	return nil
+}
+
+func createMigModeClients() error {
 	migClusterName := viperConfig.GetString("MigrationCluster")
 	// set current context to selected cluster
 	api.KubeConfig.CurrentContext = api.ClusterNames[migClusterName]

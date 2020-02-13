@@ -60,6 +60,11 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 	extraction.DstRGVKs = listNamespacedResources(api.K8sDstClient, api.DstRESTMapper)
 
 	namespace := env.Config().GetString("Namespace")
+
+	//for _, namespace := range namespaces {
+
+	//}
+
 	namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
 	namespaceResources := api.NamespaceResources{Namespace: namespaceResource}
 	extraction.NamespaceResources = &namespaceResources
@@ -69,7 +74,7 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 			if dstGVs, ok := extraction.DstRGVKs[srcRes][srcGroup]; ok {
 				if !hasSameGVKs(srcGVs, dstGVs) {
 					if !hasCommonGVKs(srcGVs, dstGVs) {
-						if env.Config().GetString("Mode") == "CAM Operator" {
+						if env.Config().GetString("Mode") == "Migration" {
 							curGVR := schema.GroupVersionResource{
 								Group: srcGroup,
 								// TODO: Replace with Preferred Version

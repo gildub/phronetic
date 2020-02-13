@@ -38,12 +38,8 @@ func init() {
 	rootCmd.PersistentFlags().StringP("migration-cluster", "c", "", "Migration cluster")
 	env.Config().BindPFlag("MigrationCluster", rootCmd.PersistentFlags().Lookup("migration-cluster"))
 
-	// Namespace to inspect
-	rootCmd.PersistentFlags().StringP("namespace", "n", "", "Namespace")
-	env.Config().BindPFlag("Namespace", rootCmd.PersistentFlags().Lookup("namespace"))
-
-	// Flag for Differiential mode - Running by default in CAM mode
-	rootCmd.PersistentFlags().StringP("mode", "m", "", "Execution mode: source/destination differential or CAM Operator")
+	// Flag for Differiential mode - Running by default in Migration mode
+	rootCmd.PersistentFlags().StringP("mode", "m", "", "Execution mode: source/destination differential or Migration (CAM Operator)")
 	env.Config().BindPFlag("Mode", rootCmd.PersistentFlags().Lookup("mode"))
 
 	// MigPlan to search for
