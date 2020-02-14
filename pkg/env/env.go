@@ -412,10 +412,10 @@ func createMigModeClients() error {
 	}
 
 	migPlan, err := api.GetMigPlan(api.CtrlClient, viperConfig.GetString("MigPlan"))
-
 	if err != nil {
 		logrus.Fatal("No MigPlan avail.")
 	}
+	api.MigPlan = &migPlan
 
 	dstCluster := migPlan.Spec.DestMigClusterRef.Name
 	srcCluster := migPlan.Spec.SrcMigClusterRef.Name

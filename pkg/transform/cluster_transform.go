@@ -59,22 +59,19 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 	extraction.SrcRGVKs = listNamespacedResources(api.K8sSrcClient, api.SrcRESTMapper)
 	extraction.DstRGVKs = listNamespacedResources(api.K8sDstClient, api.DstRESTMapper)
 
-	namespace := env.Config().GetString("Namespace")
-
-	//for _, namespace := range namespaces {
-
-	//}
-
-	namespaceResource := api.GetNamespace(api.K8sSrcClient, namespace)
-	namespaceResources := api.NamespaceResources{Namespace: namespaceResource}
-	extraction.NamespaceResources = &namespaceResources
-
 	for srcRes, srcGroupGVKs := range extraction.SrcRGVKs {
-		for srcGroup, srcGVs := range srcGroupGVKs {
-			if dstGVs, ok := extraction.DstRGVKs[srcRes][srcGroup]; ok {
-				if !hasSameGVKs(srcGVs, dstGVs) {
-					if !hasCommonGVKs(srcGVs, dstGVs) {
+		for srcGroup, srcGVKs := range srcGroupGVKs {
+			if dstGVKs, ok := extraction.DstRGVKs[srcRes][srcGroup]; ok {
+				if !hasSameGVKs(srcGVKs, dstGVKs) {
+					if !hasCommonGVKs(srcGVKs, dstGVKs) {
 						if env.Config().GetString("Mode") == "Migration" {
+							resource := api.Resource{
+								ResourceName: srcRes,
+								Source:       srcGVKs,
+								Destination:  dstGVKs,
+								Support:      "false",
+							}
+
 							curGVR := schema.GroupVersionResource{
 								Group: srcGroup,
 								// TODO: Replace with Preferred Version
@@ -83,28 +80,30 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 							}
 							crdClient := api.K8sSrcDynClient.Resource(curGVR)
 
-							crd, err := crdClient.List(metav1.ListOptions{})
-							if err != nil {
-								logrus.Fatalf("Error getting CRD %v", err)
-							}
+							for _, namespaceName := range api.MigPlan.Spec.Namespaces {
+								namespace := api.GetNamespace(api.K8sSrcClient, namespaceName)
 
-							if crd != nil {
-								extraction.SrcGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
-								extraction.SrcGapRGVKs[srcRes][srcGroup] = srcGVs
-								extraction.DstGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
-								extraction.DstGapRGVKs[srcRes][srcGroup] = dstGVs
+								crd, err := crdClient.Namespace(namespace.Name).List(metav1.ListOptions{})
+								if err != nil {
+									logrus.Fatalf("Error getting CRD %v", err)
+								}
+
+								if crd != nil {
+									resource.NamespaceList = append(resource.NamespaceList, namespace.Name)
+								}
+								extraction.ResourceList = append(extraction.ResourceList, resource)
 							}
 						} else {
 							extraction.SrcGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
-							extraction.SrcGapRGVKs[srcRes][srcGroup] = srcGVs
+							extraction.SrcGapRGVKs[srcRes][srcGroup] = srcGVKs
 							extraction.DstGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
-							extraction.DstGapRGVKs[srcRes][srcGroup] = dstGVs
+							extraction.DstGapRGVKs[srcRes][srcGroup] = dstGVKs
 						}
 					}
 				}
 			} else {
 				extraction.SrcOnlyRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
-				extraction.SrcOnlyRGVKs[srcRes][srcGroup] = srcGVs
+				extraction.SrcOnlyRGVKs[srcRes][srcGroup] = srcGVKs
 			}
 		}
 	}

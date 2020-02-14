@@ -41,9 +41,9 @@ func GenDiffReport(apiResources api.Resources) (clusterReport ReportDiff) {
 func GenMigOperatorReport(apiResources api.Resources) (clusterReport ReportMigOperator) {
 	logrus.Info("ClusterReport::Report:MigOperator")
 	clusterReport.ClusterName = api.SrcClusterName
-	clusterReport.Namespace = apiResources.NamespaceResources.Namespace.Name
-	clusterReport.GapGVKs = apiResources.SrcGapRGVKs
-	clusterReport.OnlyGVKs = apiResources.SrcOnlyRGVKs
+	//clusterReport.Namespace = apiResources.NamespaceResources.Namespace.Name
+	//clusterReport.GapGVKs = apiResources.SrcGapRGVKs
+	//clusterReport.OnlyGVKs = apiResources.SrcOnlyRGVKs
 	return
 }
 

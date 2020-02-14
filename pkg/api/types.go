@@ -1,7 +1,6 @@
 package api
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -53,20 +52,24 @@ A map[string]map[string][]schema.GroupVersionKind For example:
 ]
 */
 type Resources struct {
-	NamespaceResources *NamespaceResources
+	ResourceList []Resource
 	// SrcRGVKs contains all RGVKs available on source api-server (trimmed of "/.*"" suffixes)
 	SrcRGVKs map[string]map[string][]schema.GroupVersionKind
 	// DstRGVKs contains all RGVKs available on destination api-server (trimmed of "/.* suffixes)
 	DstRGVKs map[string]map[string][]schema.GroupVersionKind
 	// SrcOnlyRGVKs contains RGVKs only available on source api-server
 	SrcOnlyRGVKs map[string]map[string][]schema.GroupVersionKind
-	// SrcGapRGVKs contains RGVKs which group is in both source and destination api-servers but version(s) are only in src
+	// SrcGapRGVKs contains RGVKs where group is in both source and destination api-servers but version(s) are only in src
 	SrcGapRGVKs map[string]map[string][]schema.GroupVersionKind
-	// DstGapRGVKs contains RGVKs which group is in both source and destination api-servers but version(s) are only in dst
+	// DstGapRGVKs contains RGVKs where group is in both source and destination api-servers but version(s) are only in dst
 	DstGapRGVKs map[string]map[string][]schema.GroupVersionKind
 }
 
-// NamespaceResources holds all resources that belong to a namespace
-type NamespaceResources struct {
-	Namespace *corev1.Namespace
+// Resource holds support information for a resource
+type Resource struct {
+	ResourceName  string
+	Source        []schema.GroupVersionKind
+	Destination   []schema.GroupVersionKind
+	NamespaceList []string
+	Support       string
 }

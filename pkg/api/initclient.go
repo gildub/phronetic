@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/fusor/mig-controller/pkg/apis/migration/v1alpha1"
 	migv1alpha1 "github.com/fusor/mig-controller/pkg/apis/migration/v1alpha1"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -23,27 +24,35 @@ import (
 )
 
 var (
-	// DstClusterName holds Kubeconfig name of source cluster
+	// KubeConfig represents kubeconfig
+	KubeConfig *clientcmdapi.Config
+
+	// DstClusterName holds Kubeconfig name of destination cluster
 	DstClusterName string
 	// SrcClusterName holds Kubeconfig name of source cluster
 	SrcClusterName string
-	// KubeConfig represents kubeconfig
-	// KubeConfig represents kubeconfig
-	KubeConfig *clientcmdapi.Config
+
 	// SrcRESTMapper is Source REST Mapper
 	SrcRESTMapper meta.RESTMapper
 	// DstRESTMapper is destination REST Mapper
 	DstRESTMapper meta.RESTMapper
+
 	// ClusterNames contains names of contexts and cluster
 	ClusterNames = make(map[string]string)
+
 	// CtrlClient k8s controller client for migration cluster
 	CtrlClient client.Client
-	// K8sSrcClient k8s api client for source cluster
-	K8sSrcClient *kubernetes.Clientset
+
 	// K8sSrcDynClient k8s api client for source cluster
 	K8sSrcDynClient dynamic.Interface
+
 	// K8sDstClient k8s api client for target cluster
 	K8sDstClient *kubernetes.Clientset
+	// K8sSrcClient k8s api client for source cluster
+	K8sSrcClient *kubernetes.Clientset
+
+	// MigPlan object
+	MigPlan *v1alpha1.MigPlan
 
 	kubeConfigGetter = func() (*clientcmdapi.Config, error) {
 		return KubeConfig, nil
