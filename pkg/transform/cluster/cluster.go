@@ -11,8 +11,17 @@ import (
 type ReportMigOperator struct {
 	ClusterName string                                          `json:"clusterName,omitempty"`
 	Namespace   string                                          `json:"namespace,omitempty"`
-	OnlyGVKs    map[string]map[string][]schema.GroupVersionKind `json:"onlyGroupVersionKinds,omitempty"`
-	GapGVKs     map[string]map[string][]schema.GroupVersionKind `json:"gapGroupVersionKinds,omitempty"`
+	Resources   []ReportResource                                `json:"unsupportedResources,omitempty"`
+	SrcOnlyRGs  map[string]map[string][]schema.GroupVersionKind `json:"sourceOnlyResources,omitempty"`
+	GapGVKs     map[string]map[string][]schema.GroupVersionKind `json:"gapGVKs,omitempty"`
+}
+
+// ReportResource represents json data of resources
+type ReportResource struct {
+	ResourceName  string                    `json:"resourceName"`
+	NamespaceList []string                  `json:"namespaces,omitempty"`
+	Source        []schema.GroupVersionKind `json:"sourceGVKs,omitempty"`
+	Destination   []schema.GroupVersionKind `json:"destinationGVKs,omitempty"`
 }
 
 // ReportDiff represents json report of Cluster Differential report
@@ -25,7 +34,7 @@ type ReportDiff struct {
 type ReportCluster struct {
 	ClusterName string                                          `json:"clusterName,omitempty"`
 	GVRs        map[string]map[string][]schema.GroupVersionKind `json:"resourcesGroupVersionKinds,omitempty"`
-	OnlyGVKs    map[string]map[string][]schema.GroupVersionKind `json:"onlyGroupVersionKinds,omitempty"`
+	SrcOnlyRGs  map[string]map[string][]schema.GroupVersionKind `json:"sourceOnlyResources,omitempty"`
 	GapGVKs     map[string]map[string][]schema.GroupVersionKind `json:"gapGroupVersionKinds,omitempty"`
 }
 
@@ -41,16 +50,32 @@ func GenDiffReport(apiResources api.Resources) (clusterReport ReportDiff) {
 func GenMigOperatorReport(apiResources api.Resources) (clusterReport ReportMigOperator) {
 	logrus.Info("ClusterReport::Report:MigOperator")
 	clusterReport.ClusterName = api.SrcClusterName
-	//clusterReport.Namespace = apiResources.NamespaceResources.Namespace.Name
-	//clusterReport.GapGVKs = apiResources.SrcGapRGVKs
-	//clusterReport.OnlyGVKs = apiResources.SrcOnlyRGVKs
+	clusterReport.Resources = GenMigResourceReport(apiResources.ResourceList)
+	clusterReport.GapGVKs = apiResources.SrcGapRGVKs
+	clusterReport.SrcOnlyRGs = apiResources.SrcOnlyRGs
+	return
+}
+
+// GenMigResourceReport inserts report values for Source Cluster for json output
+func GenMigResourceReport(apiResources []api.Resource) (ResourcesReport []ReportResource) {
+	ResourcesReport = []ReportResource{}
+	for _, apiResource := range apiResources {
+		resource := ReportResource{}
+		resource.ResourceName = apiResource.ResourceName
+		resource.NamespaceList = apiResource.NamespaceList
+		resource.Source = apiResource.Source
+		resource.Destination = apiResource.Destination
+
+		ResourcesReport = append(ResourcesReport, resource)
+	}
+
 	return
 }
 
 // GenSrcClusterReport inserts report values for Source Cluster for json output
 func GenSrcClusterReport(apiResources api.Resources) (clusterReport ReportCluster) {
 	clusterReport.ClusterName = api.SrcClusterName
-	clusterReport.OnlyGVKs = apiResources.SrcOnlyRGVKs
+	clusterReport.SrcOnlyRGs = apiResources.SrcOnlyRGs
 	clusterReport.GapGVKs = apiResources.SrcGapRGVKs
 	clusterReport.GVRs = apiResources.SrcRGVKs
 	return
@@ -59,7 +84,7 @@ func GenSrcClusterReport(apiResources api.Resources) (clusterReport ReportCluste
 // GenDstClusterReport inserts report values for Destination Cluster for json output
 func GenDstClusterReport(apiResources api.Resources) (clusterReport ReportCluster) {
 	clusterReport.ClusterName = api.DstClusterName
-	//clusterReport.DstOnlyGVKs = apiResources.DstOnlyGVKs
+	// clusterReport.DstOnlyGVKs = apiResources.DstOnlyGVKs
 	clusterReport.GapGVKs = apiResources.DstGapRGVKs
 	clusterReport.GVRs = apiResources.DstRGVKs
 	return

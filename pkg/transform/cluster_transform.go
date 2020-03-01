@@ -49,7 +49,7 @@ func (e ClusterExtraction) Validate() (err error) { return }
 func (e ClusterTransform) Extract() (Extraction, error) {
 	extraction := &ClusterExtraction{}
 
-	extraction.SrcOnlyRGVKs = map[string]map[string][]schema.GroupVersionKind{}
+	extraction.SrcOnlyRGs = map[string]map[string][]schema.GroupVersionKind{}
 	extraction.SrcGapRGVKs = map[string]map[string][]schema.GroupVersionKind{}
 	extraction.DstGapRGVKs = map[string]map[string][]schema.GroupVersionKind{}
 
@@ -91,8 +91,8 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 								if crd != nil {
 									resource.NamespaceList = append(resource.NamespaceList, namespace.Name)
 								}
-								extraction.ResourceList = append(extraction.ResourceList, resource)
 							}
+							extraction.ResourceList = append(extraction.ResourceList, resource)
 						} else {
 							extraction.SrcGapRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
 							extraction.SrcGapRGVKs[srcRes][srcGroup] = srcGVKs
@@ -102,16 +102,13 @@ func (e ClusterTransform) Extract() (Extraction, error) {
 					}
 				}
 			} else {
-				extraction.SrcOnlyRGVKs[srcRes] = map[string][]schema.GroupVersionKind{}
-				extraction.SrcOnlyRGVKs[srcRes][srcGroup] = srcGVKs
+				extraction.SrcOnlyRGs[srcRes] = map[string][]schema.GroupVersionKind{}
+				extraction.SrcOnlyRGs[srcRes][srcGroup] = srcGVKs
 			}
 		}
 	}
 
 	return *extraction, nil
-
-	// TODO: exception rule?
-	// return nil, errors.New("Cluster Transform failed: Migration controller missing")
 }
 
 func hasCommonGVKs(src, dst []schema.GroupVersionKind) bool {
