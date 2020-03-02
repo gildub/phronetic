@@ -6,13 +6,7 @@ import (
 	migv1alpha1 "github.com/fusor/mig-controller/pkg/apis/migration/v1alpha1"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/api/apps/v1beta1"
-	autoscalingv1 "k8s.io/api/autoscaling/v1"
-	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
-	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -43,20 +37,6 @@ func GetKindsFor(restMapper meta.RESTMapper, resource string) []schema.GroupVers
 		logrus.Fatal(err)
 	}
 	return gvks
-}
-
-// ListSrvResForGV returns the supported resources for a group and version.
-//func (d *DiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (resources *metav1.APIResourceList, err error) {}
-// TODO: Is there a better way to break down exhaustive list of Resource/GVKs?
-func ListSrvResForGV(gv string) {}
-
-// ListGroupVersions list all GV
-func ListGroupVersions(client *kubernetes.Clientset) *metav1.APIGroupList {
-	groupVersions, err := client.ServerGroups()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return groupVersions
 }
 
 // ListServerResources list all resources
@@ -102,112 +82,4 @@ func GetNamespace(client *kubernetes.Clientset, name string) *corev1.Namespace {
 		logrus.Fatal(err)
 	}
 	return namespace
-}
-
-// ListDaemonSets will collect all DS from specific namespace
-func ListDaemonSets(client *kubernetes.Clientset, namespace string) *extv1beta1.DaemonSetList {
-	daemonSets, err := client.ExtensionsV1beta1().DaemonSets(namespace).List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return daemonSets
-}
-
-// ListDeployments will list all deployments seeding in the selected namespace
-func ListDeployments(client *kubernetes.Clientset, namespace string) *v1beta1.DeploymentList {
-	deployments, err := client.AppsV1beta1().Deployments(namespace).List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return deployments
-}
-
-// ListHPAv1 gets Horizontal Pod Autoscaler v1 objects
-func ListHPAv1(client *kubernetes.Clientset, namespace string) *autoscalingv1.HorizontalPodAutoscalerList {
-	hpas, err := client.AutoscalingV1().HorizontalPodAutoscalers(namespace).List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return hpas
-}
-
-// ListHPAv2beta1 gets Horizontal Pod Autoscaler v2beta1 objects
-func ListHPAv2beta1(client *kubernetes.Clientset, namespace string) *autoscalingv2beta1.HorizontalPodAutoscalerList {
-	hpas, err := client.AutoscalingV2beta1().HorizontalPodAutoscalers(namespace).List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return hpas
-}
-
-// ListHPAv2beta2 gets Horizontal Pod Autoscaler v2beta2 objects
-func ListHPAv2beta2(client *kubernetes.Clientset, namespace string) *autoscalingv2beta2.HorizontalPodAutoscalerList {
-	hpas, err := client.AutoscalingV2beta2().HorizontalPodAutoscalers(namespace).List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return hpas
-}
-
-// ListNamespaces list all namespaces, wrapper around client-go
-func ListNamespaces(client *kubernetes.Clientset, ch chan<- *corev1.NamespaceList) {
-	namespaces, err := client.CoreV1().Namespaces().List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	ch <- namespaces
-}
-
-// ListNodes list all nodes, wrapper around client-go
-func ListNodes(client *kubernetes.Clientset, ch chan<- *corev1.NodeList) {
-	nodes, err := client.CoreV1().Nodes().List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	ch <- nodes
-}
-
-// ListPods list all pods in namespace, wrapper around client-go
-func ListPods(client *kubernetes.Clientset, namespace string) *corev1.PodList {
-	pods, err := client.CoreV1().Pods(namespace).List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return pods
-}
-
-// ListResourceQuotas list all quotas classes, wrapper around client-go
-func ListResourceQuotas(client *kubernetes.Clientset, namespace string) *corev1.ResourceQuotaList {
-	quotas, err := client.CoreV1().ResourceQuotas(namespace).List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return quotas
-}
-
-// ListStorageClasses list all storage classes, wrapper around client-go
-func ListStorageClasses(client *kubernetes.Clientset, ch chan<- *storagev1.StorageClassList) {
-	sc, err := client.StorageV1().StorageClasses().List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	ch <- sc
-}
-
-// ListPVs list all PVs, wrapper around client-go
-func ListPVs(client *kubernetes.Clientset, ch chan<- *corev1.PersistentVolumeList) {
-	pvs, err := client.CoreV1().PersistentVolumes().List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	ch <- pvs
-}
-
-// ListPVCs list all PVs, wrapper around client-go
-func ListPVCs(client *kubernetes.Clientset, namespace string) *corev1.PersistentVolumeClaimList {
-	pvcs, err := client.CoreV1().PersistentVolumeClaims(namespace).List(listOptions)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return pvcs
 }
