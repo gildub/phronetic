@@ -5,6 +5,7 @@ import (
 )
 
 /*
+Resources store GVKs
 RGVKs is short for Resource -> GroupVersionKind
 RGVKs represents resources broken down by group and their containing GVKs
 Eaach list is built up and filtered down from k8s/client-go/restmapper.GetAPIGroupResources(client.Discovery())
